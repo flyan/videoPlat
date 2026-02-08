@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 用户控制器
+ *
+ * 处理用户相关的 HTTP 请求
+ */
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor

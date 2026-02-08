@@ -10,6 +10,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 用户认证控制器
+ *
+ * 处理用户登录、游客登录等认证相关的 HTTP 请求
+ *
+ * @author VideoPlat Team
+ * @since 1.0
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor

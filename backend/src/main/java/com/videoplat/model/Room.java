@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 会议室实体
+ *
+ * 支持最多 10 人同时在线，可设置密码保护
+ */
 @Entity
 @Table(name = "rooms")
 @Data
@@ -20,6 +25,7 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // 会议室唯一标识符，用于加入会议
     @Column(name = "room_id", unique = true, nullable = false)
     private String roomId;
 
@@ -29,9 +35,11 @@ public class Room {
     @Column(name = "creator_id", nullable = false)
     private Long creatorId;
 
+    // 会议室密码哈希值，为空表示无密码
     @Column(name = "password_hash")
     private String passwordHash;
 
+    // 最大参与人数，默认 10 人
     @Column(name = "max_participants", nullable = false)
     private Integer maxParticipants;
 
@@ -51,8 +59,11 @@ public class Room {
         status = RoomStatus.ACTIVE;
     }
 
+    /**
+     * 会议室状态枚举
+     */
     public enum RoomStatus {
-        ACTIVE,
-        ENDED
+        ACTIVE,  // 进行中
+        ENDED    // 已结束
     }
 }

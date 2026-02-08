@@ -1,9 +1,12 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+// API 基础 URL，支持通过环境变量配置
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
-// 创建 axios 实例
+/**
+ * 创建 axios 实例
+ */
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -12,7 +15,10 @@ const apiClient = axios.create({
   },
 })
 
-// 请求拦截器 - 添加 token
+/**
+ * 请求拦截器
+ * 自动添加 JWT Token 到请求头
+ */
 apiClient.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().token
@@ -26,11 +32,13 @@ apiClient.interceptors.request.use(
   }
 )
 
-// 响应拦截器 - 处理错误
+/**
+ * 响应拦截器
+ * 统一处理响应数据和错误
+ */
 apiClient.interceptors.response.use(
   (response) => {
     // 后端返回格式: { success: true, data: {...}, message: "..." }
-    // 直接返回 data 字段
     const result = response.data
     if (result.success) {
       return result.data
@@ -40,26 +48,24 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      // 服务器返回错误状态码
       const { status, data } = error.response
 
+      // Token 过期或无效，清除登录状态并跳转到登录页
       if (status === 401) {
-        // token 过期或无效，清除登录状态
-        useAuthStore.getState().logout()
         window.location.href = '/login'
       }
 
-      // 如果后端返回了标准格式的错误
+      // 返回后端的错误信息
       if (data && data.message) {
         return Promise.reject({ message: data.message })
       }
 
       return Promise.reject({ message: data?.message || '请求失败' })
     } else if (error.request) {
-      // 请求已发送但没有收到响应
+      // 请求已发送但没有收到响应（网络错误）
       return Promise.reject({ message: '网络错误，请检查网络连接' })
     } else {
-      // 其他错误
+      // 其他错误（请求配置错误等）
       return Promise.reject({ message: error.message || '未知错误' })
     }
   }

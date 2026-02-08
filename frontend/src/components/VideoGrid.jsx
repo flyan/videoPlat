@@ -1,10 +1,22 @@
 import { useEffect, useRef } from 'react'
 import clsx from 'clsx'
 
+/**
+ * 视频网格组件
+ *
+ * 以网格布局展示本地和远程用户的视频流
+ *
+ * @param {Object} props
+ * @param {Object} props.localVideoTrack - 本地视频轨道
+ * @param {Array} props.remoteUsers - 远程用户列表
+ * @param {Object} props.localUser - 本地用户信息
+ */
 const VideoGrid = ({ localVideoTrack, remoteUsers, localUser }) => {
   const localVideoRef = useRef(null)
 
-  // 播放本地视频
+  /**
+   * 播放本地视频流
+   */
   useEffect(() => {
     if (localVideoTrack && localVideoRef.current) {
       localVideoTrack.play(localVideoRef.current)
@@ -47,10 +59,19 @@ const VideoGrid = ({ localVideoTrack, remoteUsers, localUser }) => {
   )
 }
 
+/**
+ * 远程用户视频组件
+ *
+ * @param {Object} props
+ * @param {Object} props.user - 远程用户信息（包含 videoTrack 和 audioTrack）
+ */
 const RemoteVideo = ({ user }) => {
   const videoRef = useRef(null)
   const audioRef = useRef(null)
 
+  /**
+   * 播放远程用户的视频流
+   */
   useEffect(() => {
     if (user.videoTrack && videoRef.current) {
       user.videoTrack.play(videoRef.current)
@@ -63,6 +84,9 @@ const RemoteVideo = ({ user }) => {
     }
   }, [user.videoTrack])
 
+  /**
+   * 播放远程用户的音频流
+   */
   useEffect(() => {
     if (user.audioTrack && audioRef.current) {
       user.audioTrack.play()

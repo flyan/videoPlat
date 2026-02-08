@@ -8,6 +8,11 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * 数据初始化器
+ *
+ * 应用启动时自动创建测试用户
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -18,7 +23,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // 创建测试用户
+        // 创建管理员测试账号
         if (!userRepository.existsByUsername("admin")) {
             User admin = User.builder()
                     .username("admin")
@@ -30,6 +35,7 @@ public class DataInitializer implements CommandLineRunner {
             log.info("创建测试用户: admin / admin123");
         }
 
+        // 创建普通用户测试账号
         if (!userRepository.existsByUsername("user1")) {
             User user1 = User.builder()
                     .username("user1")

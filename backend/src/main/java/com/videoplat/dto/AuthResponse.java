@@ -5,6 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 认证响应
+ *
+ * 包含用户信息和 JWT Token
+ */
 @Data
 @Builder
 @NoArgsConstructor

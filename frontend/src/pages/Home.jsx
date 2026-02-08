@@ -13,6 +13,11 @@ import { createRoom, joinRoom } from '../services/room'
 
 const { Title, Text } = Typography
 
+/**
+ * 首页组件
+ *
+ * 提供创建会议室和加入会议室的入口
+ */
 const Home = () => {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
@@ -20,7 +25,9 @@ const Home = () => {
   const [joinModalVisible, setJoinModalVisible] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // 创建会议室
+  /**
+   * 创建会议室并自动加入
+   */
   const handleCreateRoom = async (values) => {
     setLoading(true)
     try {
@@ -39,7 +46,9 @@ const Home = () => {
     }
   }
 
-  // 加入会议室
+  /**
+   * 加入已存在的会议室
+   */
   const handleJoinRoom = async (values) => {
     setLoading(true)
     try {
@@ -54,7 +63,9 @@ const Home = () => {
     }
   }
 
-  // 退出登录
+  /**
+   * 退出登录
+   */
   const handleLogout = () => {
     Modal.confirm({
       title: '确认退出',

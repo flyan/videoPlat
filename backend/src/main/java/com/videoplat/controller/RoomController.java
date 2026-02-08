@@ -12,6 +12,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 会议室控制器
+ *
+ * 处理会议室创建、加入、离开、结束等相关的 HTTP 请求
+ *
+ * @author VideoPlat Team
+ * @since 1.0
+ */
 @RestController
 @RequestMapping("/api/rooms")
 @RequiredArgsConstructor

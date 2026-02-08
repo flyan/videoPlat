@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 参与者数据传输对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

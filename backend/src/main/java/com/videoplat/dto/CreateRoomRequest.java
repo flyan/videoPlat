@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * 创建会议室请求
+ */
 @Data
 public class CreateRoomRequest {
 

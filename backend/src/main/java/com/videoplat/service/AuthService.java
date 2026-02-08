@@ -10,6 +10,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+/**
+ * 用户认证服务
+ *
+ * 负责用户登录、游客登录、JWT Token 生成等认证相关功能
+ *
+ * @author VideoPlat Team
+ * @since 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -18,6 +26,13 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
+    /**
+     * 用户登录
+     *
+     * @param request 登录请求，包含用户名和密码
+     * @return 认证响应，包含用户信息和 JWT Token
+     * @throws RuntimeException 当用户名或密码错误时
+     */
     @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
@@ -35,6 +50,14 @@ public class AuthService {
                 .build();
     }
 
+    /**
+     * 游客登录
+     *
+     * 创建临时游客账号，无需注册即可加入会议
+     *
+     * @param request 游客登录请求，包含昵称
+     * @return 认证响应，包含游客用户信息和 JWT Token
+     */
     @Transactional
     public AuthResponse guestLogin(GuestLoginRequest request) {
         // 创建游客用户
@@ -54,12 +77,20 @@ public class AuthService {
                 .build();
     }
 
+    /**
+     * 获取当前用户信息
+     *
+     * @param userId 用户 ID
+     * @return 用户信息 DTO
+     * @throws RuntimeException 当用户不存在时
+     */
     public UserDto getCurrentUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
         return convertToDto(user);
     }
 
+    // 将用户实体转换为 DTO
     private UserDto convertToDto(User user) {
         return UserDto.builder()
                 .id(user.getId())

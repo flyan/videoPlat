@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 用户数据传输对象
+ *
+ * 不包含敏感信息（如密码哈希）
+ */
 @Data
 @Builder
 @NoArgsConstructor

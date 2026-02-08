@@ -6,6 +6,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+/**
+ * 会议室数据访问层
+ */
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long> {
 
@@ -13,5 +16,6 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     boolean existsByRoomId(String roomId);
 
+    // 统计指定状态的会议室数量
     long countByStatus(Room.RoomStatus status);
 }

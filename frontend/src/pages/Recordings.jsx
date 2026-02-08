@@ -25,6 +25,11 @@ import VideoPlayer from '../components/VideoPlayer'
 const { RangePicker } = DatePicker
 const { Title } = Typography
 
+/**
+ * 录制列表页面组件
+ *
+ * 展示所有会议录制记录，支持播放、下载和删除
+ */
 const Recordings = () => {
   const navigate = useNavigate()
   const [recordings, setRecordings] = useState([])
@@ -34,7 +39,10 @@ const Recordings = () => {
   const [searchText, setSearchText] = useState('')
   const [dateRange, setDateRange] = useState(null)
 
-  // 加载录制列表
+  /**
+   * 加载录制列表
+   * 支持按会议名称和日期范围筛选
+   */
   const loadRecordings = async () => {
     setLoading(true)
     try {
@@ -60,13 +68,17 @@ const Recordings = () => {
     loadRecordings()
   }, [])
 
-  // 播放录制
+  /**
+   * 播放录制视频
+   */
   const handlePlay = (recording) => {
     setCurrentRecording(recording)
     setPlayerVisible(true)
   }
 
-  // 下载录制
+  /**
+   * 下载录制文件
+   */
   const handleDownload = (recording) => {
     const url = getRecordingStreamUrl(recording.id)
     const link = document.createElement('a')
@@ -78,7 +90,9 @@ const Recordings = () => {
     message.success('开始下载')
   }
 
-  // 删除录制
+  /**
+   * 删除录制记录
+   */
   const handleDelete = (recording) => {
     Modal.confirm({
       title: '删除录制',
@@ -98,12 +112,16 @@ const Recordings = () => {
     })
   }
 
-  // 搜索
+  /**
+   * 执行搜索
+   */
   const handleSearch = () => {
     loadRecordings()
   }
 
-  // 格式化时长
+  /**
+   * 格式化时长为 HH:MM:SS 或 MM:SS
+   */
   const formatDuration = (seconds) => {
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
@@ -115,7 +133,9 @@ const Recordings = () => {
     return `${minutes}:${String(secs).padStart(2, '0')}`
   }
 
-  // 格式化文件大小
+  /**
+   * 格式化文件大小为可读格式
+   */
   const formatFileSize = (bytes) => {
     if (bytes < 1024) return `${bytes} B`
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`

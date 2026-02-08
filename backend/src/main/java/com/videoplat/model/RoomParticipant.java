@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 会议室参与者实体
+ *
+ * 记录用户加入和离开会议室的时间，以及是否为主持人
+ */
 @Entity
 @Table(name = "room_participants")
 @Data
@@ -29,9 +34,11 @@ public class RoomParticipant {
     @Column(name = "joined_at", nullable = false)
     private LocalDateTime joinedAt;
 
+    // 离开时间为空表示仍在会议中
     @Column(name = "left_at")
     private LocalDateTime leftAt;
 
+    // 会议室创建者默认为主持人
     @Column(name = "is_host", nullable = false)
     private Boolean isHost;
 

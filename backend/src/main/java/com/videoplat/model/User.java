@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 用户实体
+ *
+ * 支持注册用户和游客两种类型
+ */
 @Entity
 @Table(name = "users")
 @Data
@@ -23,6 +28,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String username;
 
+    // 游客用户此字段为空
     @Column(name = "password_hash")
     private String passwordHash;
 
@@ -53,8 +59,11 @@ public class User {
         updatedAt = LocalDateTime.now();
     }
 
+    /**
+     * 用户类型枚举
+     */
     public enum UserType {
-        REGISTERED,
-        GUEST
+        REGISTERED,  // 注册用户
+        GUEST        // 游客
     }
 }

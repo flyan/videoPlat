@@ -15,6 +15,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 会议录制服务
+ *
+ * 负责会议录制的启动、停止、查询和删除等功能
+ *
+ * @author VideoPlat Team
+ * @since 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class RecordingService {
@@ -22,9 +30,20 @@ public class RecordingService {
     private final RecordingRepository recordingRepository;
     private final RoomRepository roomRepository;
 
+    // 录制文件存储路径
     @Value("${app.recording.storage-path}")
     private String storagePath;
 
+    /**
+     * 开始录制
+     *
+     * 只有主持人可以开始录制，录制文件将保存到配置的存储路径
+     *
+     * @param roomId 会议室 ID
+     * @param userId 用户 ID
+     * @return 录制信息 DTO
+     * @throws RuntimeException 当会议室不存在、用户不是主持人或会议室已结束时
+     */
     @Transactional
     public RecordingDto startRecording(String roomId, Long userId) {
         Room room = roomRepository.findByRoomId(roomId)
@@ -60,6 +79,13 @@ public class RecordingService {
         return convertToDto(recording);
     }
 
+    /**
+     * 停止录制
+     *
+     * @param roomId 会议室 ID
+     * @param recordingId 录制 ID
+     * @throws RuntimeException 当录制不存在或已停止时
+     */
     @Transactional
     public void stopRecording(String roomId, Long recordingId) {
         Recording recording = recordingRepository.findById(recordingId)
@@ -81,6 +107,16 @@ public class RecordingService {
         recordingRepository.save(recording);
     }
 
+    /**
+     * 查询录制列表
+     *
+     * 支持按会议室名称和时间范围筛选
+     *
+     * @param roomName 会议室名称（可选）
+     * @param startDate 开始时间（可选）
+     * @param endDate 结束时间（可选）
+     * @return 录制列表
+     */
     @Transactional(readOnly = true)
     public List<RecordingDto> getRecordings(String roomName, LocalDateTime startDate, LocalDateTime endDate) {
         List<Recording> recordings = recordingRepository.findByFilters(roomName, startDate, endDate);
@@ -89,6 +125,13 @@ public class RecordingService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 获取录制详情
+     *
+     * @param recordingId 录制 ID
+     * @return 录制详情 DTO
+     * @throws RuntimeException 当录制不存在时
+     */
     @Transactional(readOnly = true)
     public RecordingDto getRecordingDetail(Long recordingId) {
         Recording recording = recordingRepository.findById(recordingId)
@@ -96,6 +139,15 @@ public class RecordingService {
         return convertToDto(recording);
     }
 
+    /**
+     * 删除录制
+     *
+     * 只有创建者可以删除录制，同时删除录制文件和数据库记录
+     *
+     * @param recordingId 录制 ID
+     * @param userId 用户 ID
+     * @throws RuntimeException 当录制不存在或用户不是创建者时
+     */
     @Transactional
     public void deleteRecording(Long recordingId, Long userId) {
         Recording recording = recordingRepository.findById(recordingId)
@@ -114,6 +166,7 @@ public class RecordingService {
         recordingRepository.delete(recording);
     }
 
+    // 将录制实体转换为 DTO
     private RecordingDto convertToDto(Recording recording) {
         return RecordingDto.builder()
                 .id(recording.getId())

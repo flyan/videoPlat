@@ -17,67 +17,73 @@ services:
   #     - videoplat-network
   #   restart: unless-stopped
 
-  # Redis 缓存
+  # Redis 缓存服务 - 用于会话管理和数据缓存
   redis:
     image: redis:7-alpine
     container_name: videoplat-redis
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes  # 启用 AOF 持久化
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - redis_data:/data  # 持久化数据存储
     networks:
       - videoplat-network
     restart: unless-stopped
 
-  # Spring Boot 后端
+  # Spring Boot 后端服务
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: videoplat-backend
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: prod  # 使用生产环境配置
+      # 数据库连接配置
       DATABASE_URL: ${DATABASE_URL}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
+      # Redis 连接配置（使用容器内部网络）
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # Agora 声网配置
       AGORA_APP_ID: ${AGORA_APP_ID}
       AGORA_APP_CERTIFICATE: ${AGORA_APP_CERTIFICATE}
+      # JWT 认证配置
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
+      # 录制文件存储路径
       RECORDING_STORAGE_PATH: /app/recordings
     ports:
-      - "8080:8080"
+      - "8080:8080"  # REST API 端口
     volumes:
-      - recordings_data:/app/recordings
-      - backend_logs:/app/logs
+      - recordings_data:/app/recordings  # 会议录制文件存储
+      - backend_logs:/app/logs  # 应用日志存储
     depends_on:
-      - redis
+      - redis  # 确保 Redis 先启动
     networks:
       - videoplat-network
     restart: unless-stopped
 
-  # React 前端
+  # React 前端服务 - Nginx 静态文件服务器
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
+        # 构建时注入环境变量
         VITE_AGORA_APP_ID: ${VITE_AGORA_APP_ID}
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
     container_name: videoplat-frontend
     ports:
-      - "80:80"
-      - "443:443"
+      - "80:80"  # HTTP 端口
+      - "443:443"  # HTTPS 端口
     depends_on:
-      - backend
+      - backend  # 确保后端先启动
     networks:
       - videoplat-network
     restart: unless-stopped
 
-  # MinIO 对象存储 (可选)
+  # MinIO 对象存储 (可选) - 用于替代本地文件存储
   # minio:
   #   image: minio/minio:latest
   #   container_name: videoplat-minio
@@ -86,21 +92,23 @@ services:
   #     MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
   #     MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
   #   ports:
-  #     - "9000:9000"
-  #     - "9001:9001"
+  #     - "9000:9000"  # API 端口
+  #     - "9001:9001"  # 管理控制台端口
   #   volumes:
   #     - minio_data:/data
   #   networks:
   #     - videoplat-network
   #   restart: unless-stopped
 
+# 容器间通信网络
 networks:
   videoplat-network:
     driver: bridge
 
+# 持久化数据卷
 volumes:
   # postgres_data:
-  redis_data:
-  recordings_data:
-  backend_logs:
+  redis_data:  # Redis 数据持久化
+  recordings_data:  # 会议录制文件
+  backend_logs:  # 后端应用日志
   # minio_data:

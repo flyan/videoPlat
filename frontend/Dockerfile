@@ -25,13 +25,20 @@ RUN npm run build
 # 生产阶段
 FROM nginx:alpine
 
+# 安装 openssl 用于生成证书
+RUN apk add --no-cache openssl
+
 # 复制构建产物
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # 复制 nginx 配置
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# 复制证书生成脚本
+COPY generate-cert.sh /docker-entrypoint.d/10-generate-cert.sh
+RUN chmod +x /docker-entrypoint.d/10-generate-cert.sh
+
 # 暴露端口
-EXPOSE 80
+EXPOSE 80 443
 
 CMD ["nginx", "-g", "daemon off;"]

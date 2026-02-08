@@ -19,6 +19,11 @@ import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 录制控制器
+ *
+ * 处理会议录制相关的 HTTP 请求
+ */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor

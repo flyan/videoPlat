@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Agora RTC Token 响应
+ */
 @Data
 @Builder
 @NoArgsConstructor

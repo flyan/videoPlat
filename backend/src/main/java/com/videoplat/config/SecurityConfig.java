@@ -12,6 +12,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Spring Security 安全配置
+ *
+ * 配置 JWT 认证、CORS、会话管理和访问权限
+ */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -22,11 +27,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // 禁用 CSRF（使用 JWT 无需 CSRF 保护）
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configure(http))
+                // 无状态会话管理
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 公开接口：认证、API 文档、健康检查
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/swagger-ui/**",
@@ -34,8 +42,10 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/actuator/health"
                         ).permitAll()
+                        // 其他接口需要认证
                         .anyRequest().authenticated()
                 )
+                // 添加 JWT 认证过滤器
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

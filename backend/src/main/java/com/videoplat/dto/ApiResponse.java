@@ -5,6 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 统一 API 响应格式
+ *
+ * @param <T> 响应数据类型
+ */
 @Data
 @Builder
 @NoArgsConstructor

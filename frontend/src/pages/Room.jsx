@@ -25,6 +25,11 @@ import {
 import { startRecording, stopRecording } from '../services/recording'
 import VideoGrid from '../components/VideoGrid'
 
+/**
+ * 会议室页面组件
+ *
+ * 提供视频会议的核心功能：音视频通话、屏幕共享、录制等
+ */
 const Room = () => {
   const { roomId } = useParams()
   const navigate = useNavigate()
@@ -65,7 +70,10 @@ const Room = () => {
     stopScreenShare,
   } = useWebRTC(roomId, user?.id, agoraToken)
 
-  // 初始化会议室
+  /**
+   * 初始化会议室
+   * 获取会议室信息、参与者列表和 Agora Token
+   */
   useEffect(() => {
     const initRoom = async () => {
       try {
@@ -93,44 +101,54 @@ const Room = () => {
       initRoom()
     }
 
-    // 组件卸载时清理
-    return () => {
-      // 不在这里调用 handleLeave，因为它会导致不必要的 API 调用
-      // 用户主动离开时会调用 handleLeave
-    }
+    // 组件卸载时清理，避免不必要的 API 调用
+    return () => {}
   }, [roomId])
 
-  // 加入频道
+  /**
+   * 获取到 Token 后自动加入频道
+   */
   useEffect(() => {
     if (agoraToken && !isJoined) {
       joinChannel()
     }
   }, [agoraToken])
 
-  // 同步音视频状态
+  /**
+   * 同步本地音频状态到 Agora SDK
+   */
   useEffect(() => {
     if (localAudioTrack) {
       toggleAudio(localAudioEnabled)
     }
   }, [localAudioEnabled, localAudioTrack])
 
+  /**
+   * 同步本地视频状态到 Agora SDK
+   */
   useEffect(() => {
     if (localVideoTrack) {
       toggleVideo(localVideoEnabled)
     }
   }, [localVideoEnabled, localVideoTrack])
 
-  // 切换音频
+  /**
+   * 切换音频开关
+   */
   const handleToggleAudio = () => {
     toggleLocalAudio()
   }
 
-  // 切换视频
+  /**
+   * 切换视频开关
+   */
   const handleToggleVideo = () => {
     toggleLocalVideo()
   }
 
-  // 开始/停止屏幕共享
+  /**
+   * 开始/停止屏幕共享
+   */
   const handleToggleScreenShare = async () => {
     try {
       if (isScreenSharing) {
@@ -149,7 +167,9 @@ const Room = () => {
     }
   }
 
-  // 开始/停止录制
+  /**
+   * 开始/停止录制（仅主持人）
+   */
   const handleToggleRecording = async () => {
     if (!isHost) {
       message.warning('只有主持人可以控制录制')
@@ -171,7 +191,9 @@ const Room = () => {
     }
   }
 
-  // 离开会议
+  /**
+   * 离开会议
+   */
   const handleLeave = async () => {
     try {
       await leaveChannel()
@@ -188,7 +210,10 @@ const Room = () => {
     }
   }
 
-  // 结束会议（仅主持人）
+  /**
+   * 结束会议（仅主持人）
+   * 所有参与者将被移出会议室
+   */
   const handleEndMeeting = () => {
     Modal.confirm({
       title: '结束会议',

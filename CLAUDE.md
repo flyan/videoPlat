@@ -38,6 +38,12 @@ docker-compose logs -f  # 查看日志
 docker-compose down  # 停止所有服务
 ```
 
+**访问地址：**
+- HTTPS（推荐）: https://192.168.10.9 或 https://localhost
+- HTTP: http://192.168.10.9 或 http://localhost（自动重定向到 HTTPS）
+
+**重要提示：** 使用 IP 地址访问时必须使用 HTTPS，否则浏览器会阻止摄像头/麦克风访问。首次访问需要信任自签名证书，详见 `HTTPS快速开始.md`。
+
 ## 环境配置
 
 ### 必需配置

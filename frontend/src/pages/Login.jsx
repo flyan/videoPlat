@@ -5,12 +5,19 @@ import { UserOutlined, LockOutlined, SmileOutlined } from '@ant-design/icons'
 import { useAuthStore } from '../store/authStore'
 import { login, guestLogin } from '../services/auth'
 
+/**
+ * 登录页面组件
+ *
+ * 提供注册用户登录和游客访问两种方式
+ */
 const Login = () => {
   const navigate = useNavigate()
   const { login: setAuth } = useAuthStore()
   const [loading, setLoading] = useState(false)
 
-  // 注册用户登录
+  /**
+   * 处理注册用户登录
+   */
   const handleLogin = async (values) => {
     setLoading(true)
     try {
@@ -26,7 +33,9 @@ const Login = () => {
     }
   }
 
-  // 游客登录
+  /**
+   * 处理游客登录
+   */
   const handleGuestLogin = async (values) => {
     setLoading(true)
     try {

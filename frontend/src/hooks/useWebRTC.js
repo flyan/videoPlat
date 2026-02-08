@@ -4,6 +4,16 @@ import { message } from 'antd'
 
 const AGORA_APP_ID = import.meta.env.VITE_AGORA_APP_ID
 
+/**
+ * WebRTC 连接管理 Hook
+ *
+ * 管理 Agora RTC 客户端的生命周期，包括加入/离开频道、发布/订阅流
+ *
+ * @param {string} roomId - 会议室 ID（频道名称）
+ * @param {string} userId - 用户 ID
+ * @param {string} token - Agora RTC Token
+ * @returns {Object} { client, localAudioTrack, localVideoTrack, remoteUsers, isJoined, isPublished, joinChannel, leaveChannel, toggleAudio, toggleVideo, startScreenShare, stopScreenShare }
+ */
 export const useWebRTC = (roomId, userId, token) => {
   const [client] = useState(() => AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }))
   const [localAudioTrack, setLocalAudioTrack] = useState(null)
@@ -12,7 +22,9 @@ export const useWebRTC = (roomId, userId, token) => {
   const [isJoined, setIsJoined] = useState(false)
   const [isPublished, setIsPublished] = useState(false)
 
-  // 加入频道
+  /**
+   * 加入频道并发布本地音视频流
+   */
   const joinChannel = async () => {
     try {
       if (!AGORA_APP_ID) {
@@ -40,7 +52,9 @@ export const useWebRTC = (roomId, userId, token) => {
     }
   }
 
-  // 离开频道
+  /**
+   * 离开频道并清理本地资源
+   */
   const leaveChannel = async () => {
     try {
       // 关闭本地轨道
@@ -66,21 +80,28 @@ export const useWebRTC = (roomId, userId, token) => {
     }
   }
 
-  // 切换音频
+  /**
+   * 切换音频开关
+   */
   const toggleAudio = async (enabled) => {
     if (localAudioTrack) {
       await localAudioTrack.setEnabled(enabled)
     }
   }
 
-  // 切换视频
+  /**
+   * 切换视频开关
+   */
   const toggleVideo = async (enabled) => {
     if (localVideoTrack) {
       await localVideoTrack.setEnabled(enabled)
     }
   }
 
-  // 开始屏幕共享
+  /**
+   * 开始屏幕共享
+   * 会暂停摄像头视频流，改为发布屏幕共享流
+   */
   const startScreenShare = async () => {
     try {
       const screenTrack = await AgoraRTC.createScreenVideoTrack()
@@ -93,7 +114,7 @@ export const useWebRTC = (roomId, userId, token) => {
       // 发布屏幕共享
       await client.publish([screenTrack])
 
-      // 监听屏幕共享停止事件
+      // 监听用户主动停止屏幕共享（点击浏览器的停止共享按钮）
       screenTrack.on('track-ended', () => {
         stopScreenShare()
       })
@@ -106,7 +127,10 @@ export const useWebRTC = (roomId, userId, token) => {
     }
   }
 
-  // 停止屏幕共享
+  /**
+   * 停止屏幕共享
+   * 恢复摄像头视频流
+   */
   const stopScreenShare = async (screenTrack) => {
     try {
       if (screenTrack) {
@@ -124,10 +148,13 @@ export const useWebRTC = (roomId, userId, token) => {
     }
   }
 
-  // 监听远程用户事件
+  /**
+   * 监听远程用户的发布/取消发布/离开事件
+   */
   useEffect(() => {
     if (!client) return
 
+    // 远程用户发布音视频流
     const handleUserPublished = async (user, mediaType) => {
       await client.subscribe(user, mediaType)
 
@@ -149,6 +176,7 @@ export const useWebRTC = (roomId, userId, token) => {
       })
     }
 
+    // 远程用户取消发布音视频流
     const handleUserUnpublished = (user, mediaType) => {
       setRemoteUsers((prevUsers) =>
         prevUsers.map(u =>
@@ -159,6 +187,7 @@ export const useWebRTC = (roomId, userId, token) => {
       )
     }
 
+    // 远程用户离开频道
     const handleUserLeft = (user) => {
       setRemoteUsers((prevUsers) => prevUsers.filter(u => u.uid !== user.uid))
     }

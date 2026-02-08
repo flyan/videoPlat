@@ -18,6 +18,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * 会议室服务
+ *
+ * 负责会议室的创建、加入、离开、结束等核心业务逻辑，以及参与者管理和 Agora Token 获取
+ *
+ * @author VideoPlat Team
+ * @since 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class RoomService {
@@ -34,6 +42,14 @@ public class RoomService {
     @Value("${app.room.max-concurrent-rooms}")
     private Integer maxConcurrentRooms;
 
+    /**
+     * 创建会议室
+     *
+     * @param request 创建会议室请求，包含会议室名称、密码、最大参与人数等
+     * @param creatorId 创建者用户 ID
+     * @return 会议室信息 DTO
+     * @throws RuntimeException 当活跃会议室数量达到上限时
+     */
     @Transactional
     public RoomDto createRoom(CreateRoomRequest request, Long creatorId) {
         // 检查并发会议室数量
@@ -73,6 +89,13 @@ public class RoomService {
         return convertToDto(room);
     }
 
+    /**
+     * 获取会议室信息
+     *
+     * @param roomId 会议室 ID
+     * @return 会议室信息 DTO
+     * @throws RuntimeException 当会议室不存在时
+     */
     @Transactional(readOnly = true)
     public RoomDto getRoomInfo(String roomId) {
         Room room = roomRepository.findByRoomId(roomId)
@@ -80,6 +103,14 @@ public class RoomService {
         return convertToDto(room);
     }
 
+    /**
+     * 加入会议室
+     *
+     * @param roomId 会议室 ID
+     * @param request 加入会议室请求，包含密码（如果需要）
+     * @param userId 用户 ID
+     * @throws RuntimeException 当会议室不存在、已结束、密码错误或人数已满时
+     */
     @Transactional
     public void joinRoom(String roomId, JoinRoomRequest request, Long userId) {
         Room room = roomRepository.findByRoomId(roomId)
@@ -117,6 +148,13 @@ public class RoomService {
         participantRepository.save(participant);
     }
 
+    /**
+     * 离开会议室
+     *
+     * @param roomId 会议室 ID
+     * @param userId 用户 ID
+     * @throws RuntimeException 当会议室不存在或用户不在会议室中时
+     */
     @Transactional
     public void leaveRoom(String roomId, Long userId) {
         Room room = roomRepository.findByRoomId(roomId)
@@ -130,6 +168,15 @@ public class RoomService {
         participantRepository.save(participant);
     }
 
+    /**
+     * 结束会议室
+     *
+     * 只有主持人可以结束会议，结束后所有参与者将被移出会议室
+     *
+     * @param roomId 会议室 ID
+     * @param userId 用户 ID
+     * @throws RuntimeException 当会议室不存在或用户不是主持人时
+     */
     @Transactional
     public void endRoom(String roomId, Long userId) {
         Room room = roomRepository.findByRoomId(roomId)
@@ -151,6 +198,13 @@ public class RoomService {
         participantRepository.saveAll(participants);
     }
 
+    /**
+     * 获取会议室参与者列表
+     *
+     * @param roomId 会议室 ID
+     * @return 参与者列表
+     * @throws RuntimeException 当会议室不存在时
+     */
     @Transactional(readOnly = true)
     public List<ParticipantDto> getParticipants(String roomId) {
         Room room = roomRepository.findByRoomId(roomId)
@@ -164,6 +218,16 @@ public class RoomService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 获取 Agora RTC Token
+     *
+     * 用于客户端加入 Agora 频道进行音视频通话
+     *
+     * @param roomId 会议室 ID
+     * @param userId 用户 ID
+     * @return Agora Token 响应，包含 Token、App ID、频道名等信息
+     * @throws RuntimeException 当会议室不存在或用户不在会议室中时
+     */
     public AgoraTokenResponse getAgoraToken(String roomId, Long userId) {
         Room room = roomRepository.findByRoomId(roomId)
                 .orElseThrow(() -> new RuntimeException("会议室不存在"));
@@ -183,6 +247,7 @@ public class RoomService {
                 .build();
     }
 
+    // 生成唯一的会议室 ID
     private String generateRoomId() {
         String roomId;
         do {
@@ -191,6 +256,7 @@ public class RoomService {
         return roomId;
     }
 
+    // 将会议室实体转换为 DTO
     private RoomDto convertToDto(Room room) {
         long currentParticipants = participantRepository.countByRoomIdAndLeftAtIsNull(room.getId());
 
@@ -208,6 +274,7 @@ public class RoomService {
                 .build();
     }
 
+    // 将参与者实体转换为 DTO
     private ParticipantDto convertToParticipantDto(RoomParticipant participant) {
         User user = userRepository.findById(participant.getUserId())
                 .orElseThrow(() -> new RuntimeException("用户不存在"));

@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 会议录制实体
+ *
+ * 存储会议录制文件的元数据信息，支持 MP4 格式
+ */
 @Entity
 @Table(name = "recordings")
 @Data
@@ -26,15 +31,19 @@ public class Recording {
     @Column(name = "room_name", nullable = false)
     private String roomName;
 
+    // 录制文件存储路径
     @Column(name = "file_path", nullable = false)
     private String filePath;
 
+    // 文件大小（字节）
     @Column(name = "file_size")
     private Long fileSize;
 
+    // 录制时长（秒）
     @Column(name = "duration")
-    private Integer duration;  // 秒
+    private Integer duration;
 
+    // 视频分辨率，如 1280x720 或 1920x1080
     @Column(name = "resolution")
     private String resolution;
 

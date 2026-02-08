@@ -2,10 +2,22 @@ import { useEffect, useRef } from 'react'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
 
+/**
+ * 视频播放器组件
+ *
+ * 基于 Video.js 的录制视频播放器
+ *
+ * @param {Object} props
+ * @param {string} props.src - 视频源 URL
+ * @param {string} props.poster - 视频封面图 URL
+ */
 const VideoPlayer = ({ src, poster }) => {
   const videoRef = useRef(null)
   const playerRef = useRef(null)
 
+  /**
+   * 初始化 Video.js 播放器
+   */
   useEffect(() => {
     if (!playerRef.current && videoRef.current) {
       const videoElement = videoRef.current
@@ -32,6 +44,9 @@ const VideoPlayer = ({ src, poster }) => {
     }
   }, [])
 
+  /**
+   * 更新播放器的视频源和封面
+   */
   useEffect(() => {
     if (playerRef.current && src) {
       playerRef.current.src({
