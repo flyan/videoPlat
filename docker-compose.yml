@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库 (如果不使用 Neon 云数据库)
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: videoplat-postgres
+  #   environment:
+  #     POSTGRES_DB: ${DB_NAME}
+  #     POSTGRES_USER: ${DB_USERNAME}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - videoplat-network
+  #   restart: unless-stopped
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: videoplat-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - videoplat-network
+    restart: unless-stopped
+
+  # Spring Boot 后端
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: videoplat-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: ${DATABASE_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      AGORA_APP_ID: ${AGORA_APP_ID}
+      AGORA_APP_CERTIFICATE: ${AGORA_APP_CERTIFICATE}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      RECORDING_STORAGE_PATH: /app/recordings
+    ports:
+      - "8080:8080"
+    volumes:
+      - recordings_data:/app/recordings
+      - backend_logs:/app/logs
+    depends_on:
+      - redis
+    networks:
+      - videoplat-network
+    restart: unless-stopped
+
+  # React 前端
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_AGORA_APP_ID: ${VITE_AGORA_APP_ID}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    container_name: videoplat-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - videoplat-network
+    restart: unless-stopped
+
+  # MinIO 对象存储 (可选)
+  # minio:
+  #   image: minio/minio:latest
+  #   container_name: videoplat-minio
+  #   command: server /data --console-address ":9001"
+  #   environment:
+  #     MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+  #     MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   volumes:
+  #     - minio_data:/data
+  #   networks:
+  #     - videoplat-network
+  #   restart: unless-stopped
+
+networks:
+  videoplat-network:
+    driver: bridge
+
+volumes:
+  # postgres_data:
+  redis_data:
+  recordings_data:
+  backend_logs:
+  # minio_data:

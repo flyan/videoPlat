@@ -1,0 +1,108 @@
+spring:
+  application:
+    name: videoplat-backend
+
+  # 数据源配置
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/videoplat}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  # JPA 配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+
+  # Redis 配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+# 服务器配置
+server:
+  port: ${APP_PORT:8080}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+
+# 应用配置
+app:
+  # JWT 配置
+  jwt:
+    secret: ${JWT_SECRET:your-secret-key-change-in-production}
+    expiration: ${JWT_EXPIRATION:86400000}  # 24小时
+
+  # Agora 配置
+  agora:
+    app-id: ${AGORA_APP_ID:}
+    app-certificate: ${AGORA_APP_CERTIFICATE:}
+    token-expiration: 3600  # 1小时
+
+  # 录制配置
+  recording:
+    storage-path: ${RECORDING_STORAGE_PATH:/app/recordings}
+    max-size-gb: ${RECORDING_MAX_SIZE_GB:100}
+
+  # 会议室配置
+  room:
+    max-participants: 10
+    max-concurrent-rooms: 10
+
+# SpringDoc OpenAPI 配置
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+# Actuator 配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.videoplat: DEBUG
+    org.springframework.web: INFO
+    org.hibernate: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /app/logs/videoplat.log
+    max-size: 10MB
+    max-history: 30
