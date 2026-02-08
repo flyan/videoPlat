@@ -78,6 +78,18 @@ app:
     app-id: ${AGORA_APP_ID:}
     app-certificate: ${AGORA_APP_CERTIFICATE:}
     token-expiration: 3600  # RTC Token 有效期：1小时（秒）
+    # 云端录制配置
+    cloud-recording:
+      customer-id: ${AGORA_CUSTOMER_ID:}  # Agora Customer ID（可选）
+      customer-secret: ${AGORA_CUSTOMER_SECRET:}  # Agora Customer Secret（可选）
+      region: ${AGORA_REGION:cn}  # 区域：cn, na, eu, ap
+      # 存储配置（开发环境使用本地存储）
+      storage:
+        vendor: 0  # 0: 本地, 1: AWS S3, 2: 阿里云 OSS, 3: 腾讯云 COS
+        region: 0
+        bucket: recordings
+        access-key: ${CLOUD_STORAGE_ACCESS_KEY:}
+        secret-key: ${CLOUD_STORAGE_SECRET_KEY:}
 
   # 会议录制配置
   recording:

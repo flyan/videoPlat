@@ -49,7 +49,7 @@ public class RecordingController {
     @Operation(summary = "停止录制")
     public ResponseEntity<ApiResponse<Void>> stopRecording(
             @PathVariable String roomId,
-            @RequestParam Long recordingId,
+            @RequestParam(required = false) Long recordingId,
             Authentication authentication) {
         recordingService.stopRecording(roomId, recordingId);
         return ResponseEntity.ok(ApiResponse.success("录制已停止", null));

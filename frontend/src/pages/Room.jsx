@@ -27,6 +27,8 @@ import {
   getAgoraToken,
 } from '../services/room'
 import { startRecording, stopRecording } from '../services/recording'
+import { sendChatMessage, getChatHistory } from '../services/chat'
+import websocketService from '../services/websocket'
 import VideoGrid from '../components/VideoGrid'
 import './Room.css'
 
@@ -63,6 +65,11 @@ const Room = () => {
   const [loading, setLoading] = useState(true)
   const screenTrackRef = useRef(null)
 
+  // 聊天相关状态
+  const [chatMessages, setChatMessages] = useState([])
+  const [chatInput, setChatInput] = useState('')
+  const chatMessagesEndRef = useRef(null)
+
   const {
     localAudioTrack,
     localVideoTrack,
@@ -91,6 +98,25 @@ const Room = () => {
 
         const tokenData = await getAgoraToken(roomId, user?.id)
         setAgoraToken(tokenData.token)
+
+        // 连接 WebSocket
+        try {
+          await websocketService.connect(user?.id)
+          console.log('WebSocket 连接成功')
+        } catch (error) {
+          console.error('WebSocket 连接失败:', error)
+          message.warning('实时聊天功能可能无法使用')
+        }
+
+        // 加载聊天历史
+        try {
+          const history = await getChatHistory(roomId)
+          if (history && history.length > 0) {
+            setChatMessages(history)
+          }
+        } catch (error) {
+          console.error('加载聊天历史失败:', error)
+        }
 
         setLoading(false)
       } catch (error) {
@@ -206,6 +232,41 @@ const Room = () => {
   const handleOpenSidebar = (content) => {
     setSidebarContent(content)
     setSidebarVisible(true)
+  }
+
+  /**
+   * 发送聊天消息
+   */
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) {
+      return
+    }
+
+    const newMessage = {
+      id: Date.now(),
+      userId: user?.id,
+      username: user?.nickname || user?.username,
+      content: chatInput.trim(),
+      timestamp: new Date().toISOString(),
+    }
+
+    setChatMessages((prev) => [...prev, newMessage])
+    setChatInput('')
+
+    // 滚动到底部
+    setTimeout(() => {
+      chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, 100)
+  }
+
+  /**
+   * 处理输入框回车键
+   */
+  const handleChatKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
   }
 
   /**
@@ -454,18 +515,46 @@ const Room = () => {
         {sidebarContent === 'chat' && (
           <div className="chat-panel">
             <div className="chat-messages">
-              <div className="empty-state">
-                <MessageOutlined style={{ fontSize: 48, color: '#cbd5e1' }} />
-                <p>暂无消息</p>
-              </div>
+              {chatMessages.length === 0 ? (
+                <div className="empty-state">
+                  <MessageOutlined style={{ fontSize: 48, color: '#cbd5e1' }} />
+                  <p>暂无消息</p>
+                </div>
+              ) : (
+                <>
+                  {chatMessages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`chat-message ${msg.userId === user?.id ? 'own-message' : ''}`}
+                    >
+                      <div className="message-header">
+                        <span className="message-username">{msg.username}</span>
+                        <span className="message-time">
+                          {new Date(msg.timestamp).toLocaleTimeString('zh-CN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                      <div className="message-content">{msg.content}</div>
+                    </div>
+                  ))}
+                  <div ref={chatMessagesEndRef} />
+                </>
+              )}
             </div>
             <div className="chat-input-area">
               <input
                 type="text"
                 placeholder="输入消息..."
                 className="chat-input"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyPress={handleChatKeyPress}
               />
-              <Button type="primary">发送</Button>
+              <Button type="primary" onClick={handleSendMessage}>
+                发送
+              </Button>
             </div>
           </div>
         )}

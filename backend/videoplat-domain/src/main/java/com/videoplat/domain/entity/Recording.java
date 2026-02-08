@@ -56,8 +56,23 @@ public class Recording {
     @Column(name = "creator_id", nullable = false)
     private Long creatorId;
 
+    // Agora 云端录制 Resource ID
+    @Column(name = "agora_resource_id")
+    private String agoraResourceId;
+
+    // Agora 云端录制 SID
+    @Column(name = "agora_sid")
+    private String agoraSid;
+
+    // 录制状态：STARTING, RECORDING, STOPPING, COMPLETED, FAILED
+    @Column(name = "status")
+    private String status;
+
     @PrePersist
     protected void onCreate() {
         startedAt = LocalDateTime.now();
+        if (status == null) {
+            status = "STARTING";
+        }
     }
 }

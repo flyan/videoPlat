@@ -32,6 +32,8 @@ public class RecordingService {
 
     private final RecordingRepository recordingRepository;
     private final RoomRepository roomRepository;
+    private final AgoraService agoraService;
+    private final AgoraCloudRecordingService cloudRecordingService;
 
     // 录制文件存储路径
     @Value("${app.recording.storage-path:/app/recordings}")
@@ -79,8 +81,36 @@ public class RecordingService {
         log.info("开始录制: 会议室={}, 录制ID={}, 文件路径={}",
                 room.getRoomName(), recording.getId(), filePath);
 
-        // TODO: 调用 Agora 云端录制 API 开始录制
-        // 这里需要集成 Agora 云端录制服务
+        // 调用 Agora 云端录制 API
+        try {
+            if (cloudRecordingService.isConfigured()) {
+                // 1. 获取 Resource ID
+                String resourceId = cloudRecordingService.acquireResource(roomId, userId.toString());
+                recording.setAgoraResourceId(resourceId);
+
+                // 2. 获取 RTC Token
+                String token = agoraService.generateRtcToken(roomId, userId.intValue());
+
+                // 3. 开始云端录制
+                String sid = cloudRecordingService.startRecording(
+                        resourceId, roomId, userId.toString(), token);
+                recording.setAgoraSid(sid);
+                recording.setStatus("RECORDING");
+
+                recordingRepository.save(recording);
+
+                log.info("Agora 云端录制已启动: resourceId={}, sid={}", resourceId, sid);
+            } else {
+                log.warn("Agora 云端录制未配置，仅创建录制记录");
+                recording.setStatus("RECORDING");
+                recordingRepository.save(recording);
+            }
+        } catch (Exception e) {
+            log.error("启动 Agora 云端录制失败: {}", e.getMessage(), e);
+            recording.setStatus("FAILED");
+            recordingRepository.save(recording);
+            throw new RuntimeException("启动云端录制失败: " + e.getMessage());
+        }
 
         return convertToDto(recording);
     }
@@ -88,22 +118,82 @@ public class RecordingService {
     /**
      * 停止录制
      *
+     * 如果未指定 recordingId，则自动查找该会议室当前正在进行的录制
+     *
      * @param roomId 会议室 ID
-     * @param recordingId 录制 ID
+     * @param recordingId 录制 ID（可选）
      * @throws RuntimeException 当录制不存在或已停止时
      */
     @Transactional
     public void stopRecording(String roomId, Long recordingId) {
-        Recording recording = recordingRepository.findById(recordingId)
-                .orElseThrow(() -> new RuntimeException("录制不存在"));
+        Recording recording;
+
+        if (recordingId != null) {
+            // 如果指定了 recordingId，直接查找
+            recording = recordingRepository.findById(recordingId)
+                    .orElseThrow(() -> new RuntimeException("录制不存在"));
+        } else {
+            // 如果未指定 recordingId，查找该会议室当前正在进行的录制
+            Room room = roomRepository.findByRoomId(roomId)
+                    .orElseThrow(() -> new RuntimeException("会议室不存在"));
+
+            List<Recording> activeRecordings = recordingRepository.findByRoomId(room.getId())
+                    .stream()
+                    .filter(r -> r.getEndedAt() == null)
+                    .collect(Collectors.toList());
+
+            if (activeRecordings.isEmpty()) {
+                throw new RuntimeException("该会议室没有正在进行的录制");
+            }
+
+            // 取最新的一个录制
+            recording = activeRecordings.get(activeRecordings.size() - 1);
+        }
 
         if (recording.getEndedAt() != null) {
             throw new RuntimeException("录制已停止");
         }
 
         recording.setEndedAt(LocalDateTime.now());
+        recording.setStatus("STOPPING");
 
-        // TODO: 调用 Agora 云端录制 API 停止录制
+        // 调用 Agora 云端录制 API 停止录制
+        try {
+            if (recording.getAgoraResourceId() != null && recording.getAgoraSid() != null) {
+                Room room = roomRepository.findById(recording.getRoomId())
+                        .orElseThrow(() -> new RuntimeException("会议室不存在"));
+
+                Map<String, Object> result = cloudRecordingService.stopRecording(
+                        recording.getAgoraResourceId(),
+                        recording.getAgoraSid(),
+                        room.getRoomId(),
+                        recording.getCreatorId().toString()
+                );
+
+                // 从返回结果中获取文件信息
+                if (result != null && result.containsKey("fileList")) {
+                    List<Map<String, Object>> fileList = (List<Map<String, Object>>) result.get("fileList");
+                    if (!fileList.isEmpty()) {
+                        Map<String, Object> fileInfo = fileList.get(0);
+                        if (fileInfo.containsKey("fileName")) {
+                            String fileName = (String) fileInfo.get("fileName");
+                            recording.setFilePath(storagePath + File.separator + fileName);
+                        }
+                    }
+                }
+
+                recording.setStatus("COMPLETED");
+                log.info("Agora 云端录制已停止: resourceId={}, sid={}",
+                        recording.getAgoraResourceId(), recording.getAgoraSid());
+            } else {
+                recording.setStatus("COMPLETED");
+                log.warn("录制未使用 Agora 云端录制");
+            }
+        } catch (Exception e) {
+            log.error("停止 Agora 云端录制失败: {}", e.getMessage(), e);
+            recording.setStatus("FAILED");
+        }
+
         // 获取实际的文件大小和时长
         File file = new File(recording.getFilePath());
         if (file.exists()) {
@@ -112,8 +202,8 @@ public class RecordingService {
 
         recordingRepository.save(recording);
 
-        log.info("停止录制: 录制ID={}, 文件大小={}",
-                recordingId, recording.getFileSize());
+        log.info("停止录制: 录制ID={}, 状态={}, 文件大小={}",
+                recording.getId(), recording.getStatus(), recording.getFileSize());
     }
 
     /**
