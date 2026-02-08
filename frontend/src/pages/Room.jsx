@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Space, message, Modal, List, Avatar, Tooltip } from 'antd'
+import { Button, message, Modal, Tooltip, Drawer } from 'antd'
 import {
   AudioOutlined,
   AudioMutedOutlined,
@@ -11,6 +11,10 @@ import {
   TeamOutlined,
   PlayCircleOutlined,
   StopOutlined,
+  MessageOutlined,
+  SettingOutlined,
+  MoreOutlined,
+  CopyOutlined,
 } from '@ant-design/icons'
 import { useWebRTC } from '../hooks/useWebRTC'
 import { useRoomStore } from '../store/roomStore'
@@ -24,6 +28,7 @@ import {
 } from '../services/room'
 import { startRecording, stopRecording } from '../services/recording'
 import VideoGrid from '../components/VideoGrid'
+import './Room.css'
 
 /**
  * 会议室页面组件
@@ -53,7 +58,8 @@ const Room = () => {
   } = useRoomStore()
 
   const [agoraToken, setAgoraToken] = useState(null)
-  const [participantsVisible, setParticipantsVisible] = useState(false)
+  const [sidebarVisible, setSidebarVisible] = useState(false)
+  const [sidebarContent, setSidebarContent] = useState('participants')
   const [loading, setLoading] = useState(true)
   const screenTrackRef = useRef(null)
 
@@ -72,21 +78,17 @@ const Room = () => {
 
   /**
    * 初始化会议室
-   * 获取会议室信息、参与者列表和 Agora Token
    */
   useEffect(() => {
     const initRoom = async () => {
       try {
-        // 获取会议室信息
         const room = await getRoomInfo(roomId)
         setRoomInfo(room)
         setIsHost(room.creatorId === user?.id)
 
-        // 获取参与者列表
         const participantsList = await getParticipants(roomId)
         setParticipants(participantsList)
 
-        // 获取 Agora Token
         const tokenData = await getAgoraToken(roomId, user?.id)
         setAgoraToken(tokenData.token)
 
@@ -101,7 +103,6 @@ const Room = () => {
       initRoom()
     }
 
-    // 组件卸载时清理，避免不必要的 API 调用
     return () => {}
   }, [roomId])
 
@@ -115,7 +116,7 @@ const Room = () => {
   }, [agoraToken])
 
   /**
-   * 同步本地音频状态到 Agora SDK
+   * 同步本地音频状态
    */
   useEffect(() => {
     if (localAudioTrack) {
@@ -124,7 +125,7 @@ const Room = () => {
   }, [localAudioEnabled, localAudioTrack])
 
   /**
-   * 同步本地视频状态到 Agora SDK
+   * 同步本地视频状态
    */
   useEffect(() => {
     if (localVideoTrack) {
@@ -133,21 +134,21 @@ const Room = () => {
   }, [localVideoEnabled, localVideoTrack])
 
   /**
-   * 切换音频开关
+   * 切换音频
    */
   const handleToggleAudio = () => {
     toggleLocalAudio()
   }
 
   /**
-   * 切换视频开关
+   * 切换视频
    */
   const handleToggleVideo = () => {
     toggleLocalVideo()
   }
 
   /**
-   * 开始/停止屏幕共享
+   * 切换屏幕共享
    */
   const handleToggleScreenShare = async () => {
     try {
@@ -168,7 +169,7 @@ const Room = () => {
   }
 
   /**
-   * 开始/停止录制（仅主持人）
+   * 切换录制
    */
   const handleToggleRecording = async () => {
     if (!isHost) {
@@ -192,12 +193,27 @@ const Room = () => {
   }
 
   /**
+   * 复制会议 ID
+   */
+  const handleCopyRoomId = () => {
+    navigator.clipboard.writeText(roomId)
+    message.success('会议 ID 已复制')
+  }
+
+  /**
+   * 打开侧边栏
+   */
+  const handleOpenSidebar = (content) => {
+    setSidebarContent(content)
+    setSidebarVisible(true)
+  }
+
+  /**
    * 离开会议
    */
   const handleLeave = async () => {
     try {
       await leaveChannel()
-      // 只有在 roomId 存在时才调用 API
       if (roomId) {
         await leaveRoom(roomId)
       }
@@ -205,14 +221,12 @@ const Room = () => {
       navigate('/')
     } catch (error) {
       console.error('离开会议失败:', error)
-      // 即使出错也要导航回首页
       navigate('/')
     }
   }
 
   /**
-   * 结束会议（仅主持人）
-   * 所有参与者将被移出会议室
+   * 结束会议
    */
   const handleEndMeeting = () => {
     Modal.confirm({
@@ -236,37 +250,53 @@ const Room = () => {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="room-loading">
         <div className="loading-spinner" />
+        <p>正在加入会议...</p>
       </div>
     )
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900">
+    <div className="room-container">
       {/* 顶部信息栏 */}
-      <div className="bg-gray-800 px-6 py-3 flex justify-between items-center">
-        <div className="text-white">
-          <h2 className="text-lg font-semibold">{roomInfo?.roomName}</h2>
-          <p className="text-sm text-gray-400">会议 ID: {roomId}</p>
+      <header className="room-header">
+        <div className="header-left">
+          <h2 className="room-name">{roomInfo?.roomName}</h2>
+          <div className="room-id-section">
+            <span className="room-id-label">会议 ID:</span>
+            <span className="room-id-value">{roomId}</span>
+            <Tooltip title="复制会议 ID">
+              <Button
+                type="text"
+                size="small"
+                icon={<CopyOutlined />}
+                onClick={handleCopyRoomId}
+                className="copy-button"
+              />
+            </Tooltip>
+          </div>
         </div>
-        <Space>
+
+        <div className="header-right">
           {isRecording && (
-            <div className="recording-indicator">
+            <div className="recording-badge">
+              <span className="recording-dot"></span>
               <span>录制中</span>
             </div>
           )}
           <Button
             icon={<TeamOutlined />}
-            onClick={() => setParticipantsVisible(true)}
+            onClick={() => handleOpenSidebar('participants')}
+            className="header-action-button"
           >
             参与者 ({participants.length})
           </Button>
-        </Space>
-      </div>
+        </div>
+      </header>
 
       {/* 视频网格 */}
-      <div className="flex-1 overflow-hidden">
+      <div className="room-video-area">
         <VideoGrid
           localVideoTrack={localVideoTrack}
           remoteUsers={remoteUsers}
@@ -280,93 +310,179 @@ const Room = () => {
       </div>
 
       {/* 底部控制栏 */}
-      <div className="meeting-controls">
-        <Tooltip title={localAudioEnabled ? '静音' : '取消静音'}>
-          <Button
-            type={localAudioEnabled ? 'default' : 'primary'}
-            danger={!localAudioEnabled}
-            shape="circle"
-            size="large"
-            icon={localAudioEnabled ? <AudioOutlined /> : <AudioMutedOutlined />}
-            onClick={handleToggleAudio}
-          />
-        </Tooltip>
+      <div className="room-controls">
+        <div className="controls-wrapper">
+          {/* 主要控制 */}
+          <div className="primary-controls">
+            <Tooltip title={localAudioEnabled ? '静音' : '取消静音'}>
+              <button
+                className={`control-button ${!localAudioEnabled ? 'danger' : ''}`}
+                onClick={handleToggleAudio}
+              >
+                <div className="button-icon">
+                  {localAudioEnabled ? <AudioOutlined /> : <AudioMutedOutlined />}
+                </div>
+                <span className="button-label">
+                  {localAudioEnabled ? '静音' : '取消静音'}
+                </span>
+              </button>
+            </Tooltip>
 
-        <Tooltip title={localVideoEnabled ? '关闭摄像头' : '开启摄像头'}>
-          <Button
-            type={localVideoEnabled ? 'default' : 'primary'}
-            danger={!localVideoEnabled}
-            shape="circle"
-            size="large"
-            icon={localVideoEnabled ? <VideoCameraOutlined /> : <VideoCameraAddOutlined />}
-            onClick={handleToggleVideo}
-          />
-        </Tooltip>
+            <Tooltip title={localVideoEnabled ? '关闭摄像头' : '开启摄像头'}>
+              <button
+                className={`control-button ${!localVideoEnabled ? 'danger' : ''}`}
+                onClick={handleToggleVideo}
+              >
+                <div className="button-icon">
+                  {localVideoEnabled ? <VideoCameraOutlined /> : <VideoCameraAddOutlined />}
+                </div>
+                <span className="button-label">
+                  {localVideoEnabled ? '停止视频' : '开启视频'}
+                </span>
+              </button>
+            </Tooltip>
 
-        <Tooltip title={isScreenSharing ? '停止共享' : '共享屏幕'}>
-          <Button
-            type={isScreenSharing ? 'primary' : 'default'}
-            shape="circle"
-            size="large"
-            icon={<DesktopOutlined />}
-            onClick={handleToggleScreenShare}
-          />
-        </Tooltip>
+            <Tooltip title={isScreenSharing ? '停止共享' : '共享屏幕'}>
+              <button
+                className={`control-button ${isScreenSharing ? 'active' : ''}`}
+                onClick={handleToggleScreenShare}
+              >
+                <div className="button-icon">
+                  <DesktopOutlined />
+                </div>
+                <span className="button-label">
+                  {isScreenSharing ? '停止共享' : '共享屏幕'}
+                </span>
+              </button>
+            </Tooltip>
 
-        {isHost && (
-          <Tooltip title={isRecording ? '停止录制' : '开始录制'}>
-            <Button
-              type={isRecording ? 'primary' : 'default'}
-              danger={isRecording}
-              shape="circle"
-              size="large"
-              icon={isRecording ? <StopOutlined /> : <PlayCircleOutlined />}
-              onClick={handleToggleRecording}
-            />
-          </Tooltip>
-        )}
+            {isHost && (
+              <Tooltip title={isRecording ? '停止录制' : '开始录制'}>
+                <button
+                  className={`control-button ${isRecording ? 'recording' : ''}`}
+                  onClick={handleToggleRecording}
+                >
+                  <div className="button-icon">
+                    {isRecording ? <StopOutlined /> : <PlayCircleOutlined />}
+                  </div>
+                  <span className="button-label">
+                    {isRecording ? '停止录制' : '录制'}
+                  </span>
+                </button>
+              </Tooltip>
+            )}
+          </div>
 
-        <Tooltip title="离开会议">
-          <Button
-            danger
-            shape="circle"
-            size="large"
-            icon={<PhoneOutlined />}
-            onClick={handleLeave}
-          />
-        </Tooltip>
+          {/* 次要控制 */}
+          <div className="secondary-controls">
+            <Tooltip title="聊天">
+              <button
+                className="control-button-small"
+                onClick={() => handleOpenSidebar('chat')}
+              >
+                <MessageOutlined />
+              </button>
+            </Tooltip>
 
-        {isHost && (
-          <Button
-            danger
-            size="large"
-            onClick={handleEndMeeting}
-          >
-            结束会议
-          </Button>
-        )}
+            <Tooltip title="设置">
+              <button
+                className="control-button-small"
+                onClick={() => handleOpenSidebar('settings')}
+              >
+                <SettingOutlined />
+              </button>
+            </Tooltip>
+
+            <Tooltip title="更多">
+              <button className="control-button-small">
+                <MoreOutlined />
+              </button>
+            </Tooltip>
+          </div>
+
+          {/* 离开按钮 */}
+          <div className="leave-controls">
+            <Tooltip title="离开会议">
+              <button className="leave-button" onClick={handleLeave}>
+                <PhoneOutlined />
+                <span>离开</span>
+              </button>
+            </Tooltip>
+
+            {isHost && (
+              <button className="end-button" onClick={handleEndMeeting}>
+                结束会议
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* 参与者列表弹窗 */}
-      <Modal
-        title="参与者列表"
-        open={participantsVisible}
-        onCancel={() => setParticipantsVisible(false)}
-        footer={null}
+      {/* 侧边栏 */}
+      <Drawer
+        title={
+          sidebarContent === 'participants'
+            ? '参与者'
+            : sidebarContent === 'chat'
+            ? '聊天'
+            : '设置'
+        }
+        placement="right"
+        onClose={() => setSidebarVisible(false)}
+        open={sidebarVisible}
+        width={360}
+        className="room-sidebar"
       >
-        <List
-          dataSource={participants}
-          renderItem={(participant) => (
-            <List.Item>
-              <List.Item.Meta
-                avatar={<Avatar>{participant.nickname?.[0] || 'U'}</Avatar>}
-                title={participant.nickname}
-                description={participant.isHost ? '主持人' : '参与者'}
+        {sidebarContent === 'participants' && (
+          <div className="participants-list">
+            {participants.map((participant) => (
+              <div key={participant.id} className="participant-item">
+                <div className="participant-avatar">
+                  {participant.nickname?.[0]?.toUpperCase() || 'U'}
+                </div>
+                <div className="participant-details">
+                  <div className="participant-name">{participant.nickname}</div>
+                  <div className="participant-role">
+                    {participant.isHost ? '主持人' : '参与者'}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {sidebarContent === 'chat' && (
+          <div className="chat-panel">
+            <div className="chat-messages">
+              <div className="empty-state">
+                <MessageOutlined style={{ fontSize: 48, color: '#cbd5e1' }} />
+                <p>暂无消息</p>
+              </div>
+            </div>
+            <div className="chat-input-area">
+              <input
+                type="text"
+                placeholder="输入消息..."
+                className="chat-input"
               />
-            </List.Item>
-          )}
-        />
-      </Modal>
+              <Button type="primary">发送</Button>
+            </div>
+          </div>
+        )}
+
+        {sidebarContent === 'settings' && (
+          <div className="settings-panel">
+            <div className="settings-section">
+              <h3>音频设置</h3>
+              <p>麦克风和扬声器设置</p>
+            </div>
+            <div className="settings-section">
+              <h3>视频设置</h3>
+              <p>摄像头和视频质量设置</p>
+            </div>
+          </div>
+        )}
+      </Drawer>
     </div>
   )
 }

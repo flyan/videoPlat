@@ -1,0 +1,23 @@
+# VideoPlat Video Review Module Configuration
+
+videoplat:
+  storage:
+    # 录制文件存储路径（可以是相对路径或绝对路径）
+    recordings-path: ./recordings
+    # 最大文件大小（5GB）
+    max-file-size: 5368709120
+    # 允许的文件扩展名
+    allowed-extensions:
+      - mp4
+      - webm
+      - mkv
+    # 是否启用文件压缩
+    enable-compression: false
+
+# Spring 配置
+spring:
+  servlet:
+    multipart:
+      # 最大文件上传大小
+      max-file-size: 5GB
+      max-request-size: 5GB

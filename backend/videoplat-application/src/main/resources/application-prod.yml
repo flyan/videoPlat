@@ -1,0 +1,13 @@
+# 生产环境配置 - 覆盖默认配置中的开发设置
+spring:
+  jpa:
+    show-sql: false  # 生产环境不打印 SQL
+    hibernate:
+      ddl-auto: update  # 临时改为 update 以自动创建表（TODO: 生产环境应使用 validate + Flyway）
+
+# 日志配置 - 生产环境降低日志级别
+logging:
+  level:
+    root: WARN  # 仅记录警告和错误
+    com.videoplat: INFO  # 应用日志保持 INFO 级别
+    org.springframework.web: WARN

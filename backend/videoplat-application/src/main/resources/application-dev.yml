@@ -1,0 +1,15 @@
+# 开发环境配置 - 覆盖默认配置
+spring:
+  jpa:
+    show-sql: true  # 开发环境打印 SQL
+    hibernate:
+      ddl-auto: update  # 开发环境自动更新表结构
+
+# 日志配置 - 开发环境详细日志
+logging:
+  level:
+    root: INFO
+    com.videoplat: DEBUG  # 应用日志保持 DEBUG 级别
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG  # 打印 SQL 语句
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE  # 打印 SQL 参数

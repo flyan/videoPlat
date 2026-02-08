@@ -1,0 +1,124 @@
+spring:
+  application:
+    name: videoplat-backend
+
+  # 数据源配置 - PostgreSQL 数据库连接
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/videoplat}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    # HikariCP 连接池配置
+    hikari:
+      maximum-pool-size: 10  # 最大连接数
+      minimum-idle: 5  # 最小空闲连接数
+      connection-timeout: 30000  # 连接超时时间（毫秒）
+
+  # JPA/Hibernate 配置
+  jpa:
+    hibernate:
+      ddl-auto: update  # 自动更新表结构（生产环境建议改为 validate）
+    show-sql: false  # 不在控制台打印 SQL（避免日志过多）
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true  # 格式化 SQL 输出
+    open-in-view: false  # 禁用 OSIV 模式，避免懒加载问题
+
+  # Redis 配置 - 用于会话管理和缓存
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
+      # Lettuce 连接池配置
+      lettuce:
+        pool:
+          max-active: 8  # 最大活跃连接数
+          max-idle: 8  # 最大空闲连接数
+          min-idle: 0  # 最小空闲连接数
+
+  # 文件上传配置 - 支持大文件录制上传
+  servlet:
+    multipart:
+      max-file-size: 100MB  # 单个文件最大大小
+      max-request-size: 100MB  # 单次请求最大大小
+
+  # HTTP 编码配置 - 解决中文乱码问题
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+  # Jackson JSON 配置
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+
+# 服务器配置
+server:
+  port: ${APP_PORT:8080}
+  # 启用 HTTP 响应压缩，减少带宽占用
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+
+# 应用自定义配置
+app:
+  # JWT 认证配置
+  jwt:
+    secret: ${JWT_SECRET:your-secret-key-change-in-production}  # 生产环境必须修改
+    expiration: ${JWT_EXPIRATION:86400000}  # Token 有效期：24小时（毫秒）
+
+  # Agora 声网 RTC 配置
+  agora:
+    app-id: ${AGORA_APP_ID:}
+    app-certificate: ${AGORA_APP_CERTIFICATE:}
+    token-expiration: 3600  # RTC Token 有效期：1小时（秒）
+
+  # 会议录制配置
+  recording:
+    storage-path: ${RECORDING_STORAGE_PATH:/app/recordings}  # 录制文件存储路径
+    max-size-gb: ${RECORDING_MAX_SIZE_GB:100}  # 最大存储容量（GB）
+
+  # 会议室限制配置
+  room:
+    max-participants: 10  # 单个会议室最大参与人数
+    max-concurrent-rooms: 10  # 系统最大并发会议室数
+
+# SpringDoc OpenAPI 配置 - Swagger 文档
+springdoc:
+  api-docs:
+    path: /api-docs  # API 文档 JSON 路径
+  swagger-ui:
+    path: /swagger-ui.html  # Swagger UI 访问路径
+    operations-sorter: method  # 按 HTTP 方法排序
+
+# Actuator 健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info  # 仅暴露健康检查和信息端点
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized  # 仅授权用户可查看详细健康信息
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.videoplat: DEBUG  # 应用日志级别
+    org.springframework.web: INFO
+    org.hibernate: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /app/logs/videoplat.log
+    max-size: 10MB  # 单个日志文件最大大小
+    max-history: 30  # 保留最近 30 天的日志

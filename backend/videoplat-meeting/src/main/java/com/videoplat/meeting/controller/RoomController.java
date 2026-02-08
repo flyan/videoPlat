@@ -1,0 +1,110 @@
+package com.videoplat.meeting.controller;
+
+import com.videoplat.common.dto.ApiResponse;
+import com.videoplat.meeting.dto.*;
+import com.videoplat.meeting.service.RoomService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 会议室控制器
+ *
+ * 处理会议室创建、加入、离开、结束等相关的 HTTP 请求
+ *
+ * @author VideoPlat Team
+ * @since 1.0
+ */
+@RestController
+@RequestMapping("/api/rooms")
+@RequiredArgsConstructor
+@Tag(name = "会议室", description = "会议室管理相关接口")
+public class RoomController {
+
+    private final RoomService roomService;
+
+    @PostMapping
+    @Operation(summary = "创建会议室")
+    public ResponseEntity<ApiResponse<RoomDto>> createRoom(
+            @Valid @RequestBody CreateRoomRequest request,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        RoomDto room = roomService.createRoom(request, userId);
+        return ResponseEntity.ok(ApiResponse.success(room));
+    }
+
+    @GetMapping("/{roomId}")
+    @Operation(summary = "获取会议室信息")
+    public ResponseEntity<ApiResponse<RoomDto>> getRoomInfo(@PathVariable String roomId) {
+        RoomDto room = roomService.getRoomInfo(roomId);
+        return ResponseEntity.ok(ApiResponse.success(room));
+    }
+
+    @PostMapping("/{roomId}/join")
+    @Operation(summary = "加入会议室")
+    public ResponseEntity<ApiResponse<Void>> joinRoom(
+            @PathVariable String roomId,
+            @RequestBody JoinRoomRequest request,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        roomService.joinRoom(roomId, request, userId);
+        return ResponseEntity.ok(ApiResponse.success("成功加入会议室", null));
+    }
+
+    @PostMapping("/{roomId}/leave")
+    @Operation(summary = "离开会议室")
+    public ResponseEntity<ApiResponse<Void>> leaveRoom(
+            @PathVariable String roomId,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        roomService.leaveRoom(roomId, userId);
+        return ResponseEntity.ok(ApiResponse.success("已离开会议室", null));
+    }
+
+    @DeleteMapping("/{roomId}")
+    @Operation(summary = "结束会议室")
+    public ResponseEntity<ApiResponse<Void>> endRoom(
+            @PathVariable String roomId,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        roomService.endRoom(roomId, userId);
+        return ResponseEntity.ok(ApiResponse.success("会议室已结束", null));
+    }
+
+    @GetMapping("/{roomId}/participants")
+    @Operation(summary = "获取参与者列表")
+    public ResponseEntity<ApiResponse<List<ParticipantDto>>> getParticipants(@PathVariable String roomId) {
+        List<ParticipantDto> participants = roomService.getParticipants(roomId);
+        return ResponseEntity.ok(ApiResponse.success(participants));
+    }
+
+    @GetMapping("/{roomId}/agora-token")
+    @Operation(summary = "获取 Agora Token")
+    public ResponseEntity<ApiResponse<AgoraTokenResponse>> getAgoraToken(
+            @PathVariable String roomId,
+            Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        AgoraTokenResponse token = roomService.getAgoraToken(roomId, userId);
+        return ResponseEntity.ok(ApiResponse.success(token));
+    }
+
+    @PostMapping("/cleanup")
+    @Operation(summary = "手动清理无人会议室", description = "清理所有无人的活跃会议室")
+    public ResponseEntity<ApiResponse<Integer>> manualCleanup() {
+        int cleanedCount = roomService.manualCleanupAllRooms();
+        return ResponseEntity.ok(ApiResponse.success("已清理 " + cleanedCount + " 个无人会议室", cleanedCount));
+    }
+
+    @PostMapping("/cleanup/force")
+    @Operation(summary = "强制清理所有会议室", description = "强制结束所有活跃会议室，包括有人的会议室。谨慎使用！")
+    public ResponseEntity<ApiResponse<Integer>> forceCleanup() {
+        int cleanedCount = roomService.forceCleanupAllRooms();
+        return ResponseEntity.ok(ApiResponse.success("已强制清理 " + cleanedCount + " 个会议室", cleanedCount));
+    }
+}

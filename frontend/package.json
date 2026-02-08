@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",  // 启动开发服务器 (http://localhost:3000)
-    "build": "vite build",  // 构建生产版本
-    "preview": "vite preview",  // 预览生产构建结果
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",  // 代码检查
-    "format": "prettier --write \"src/**/*.{js,jsx,json,css,md}\""  // 代码格式化
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write \"src/**/*.{js,jsx,json,css,md}\""
   },
   "dependencies": {
     "react": "^18.2.0",
