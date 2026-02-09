@@ -119,11 +119,37 @@ videoPlat/
 │   │   └── config/        # 配置类
 │   └── pom.xml
 ├── docker/                # Docker 配置
-├── docs/                  # 项目文档
+├── docs/                  # 📚 项目文档
+│   ├── deployment/        # 部署文档
+│   ├── features/          # 功能文档
+│   ├── troubleshooting/   # 故障排查
+│   ├── development/       # 开发文档
+│   └── archive/           # 归档文档
 ├── docker-compose.yml     # Docker Compose 配置
 ├── CLAUDE.md             # 项目上下文
 └── README.md             # 项目说明
 ```
+
+## 📚 文档导航
+
+### 快速开始
+- [HTTPS 快速开始](docs/deployment/HTTPS快速开始.md) - HTTPS 配置指南
+- [部署完成报告](docs/deployment/部署完成报告.md) - 最新部署状态
+
+### 功能文档
+- [录制功能已解决](docs/features/录制功能已解决.md) ⭐ - 录制问题解决方案
+- [本地录制快速开始](docs/features/本地录制快速开始.md) - 本地录制指南
+- [WebSocket 聊天功能](docs/features/WebSocket聊天功能实现文档.md) - 实时聊天
+
+### 故障排查
+- [IP 地址访问问题](docs/troubleshooting/IP地址访问问题解决方案.md)
+- [录制功能修复报告](docs/troubleshooting/录制功能修复完成报告.md)
+
+### 开发文档
+- [代码注释规范](docs/development/COMMENT_GUIDELINES.md)
+- [重构完成报告](docs/development/重构完成报告.md)
+
+**更多文档**: 查看 [docs/README.md](docs/README.md)
 
 ## API 文档
 

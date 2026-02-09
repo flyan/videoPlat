@@ -184,6 +184,17 @@ const Home = () => {
             >
               录制记录
             </Button>
+            {user?.role === 'ADMIN' && (
+              <Button
+                icon={<SettingOutlined />}
+                type="text"
+                className="header-button"
+                onClick={() => navigate('/admin/rooms')}
+                style={{ color: '#1890ff' }}
+              >
+                管理台
+              </Button>
+            )}
             <Dropdown
               menu={{ items: userMenuItems }}
               placement="bottomRight"

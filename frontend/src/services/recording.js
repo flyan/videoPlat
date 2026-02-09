@@ -47,6 +47,6 @@ export const deleteRecording = async (recordingId) => {
  * @returns {string} 视频流 URL
  */
 export const getRecordingStreamUrl = (recordingId) => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
-  return `${baseUrl}/recordings/${recordingId}/stream`
+  // 使用相对路径，让 Nginx 反向代理处理
+  return `/api/recordings/${recordingId}/stream`
 }

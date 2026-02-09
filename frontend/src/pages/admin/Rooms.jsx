@@ -18,9 +18,10 @@ import {
   StopOutlined,
   EyeOutlined,
   ExclamationCircleOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons'
 import { useAdminStore } from '../../store/adminStore'
-import { getRooms, getRoomDetail, forceCloseRoom } from '../../services/admin'
+import { getRooms, getRoomDetail, forceCloseRoom, forceCloseAllRooms } from '../../services/admin'
 
 const { Search } = Input
 const { Option } = Select
@@ -58,11 +59,12 @@ function Rooms() {
     setRoomsLoading(true)
     try {
       const data = await getRooms({
-        page,
+        page: page - 1, // Spring Data Page 从 0 开始
         size,
         ...filters,
       })
-      setRooms(data.list || [], data.total || 0)
+      // Spring Data Page 格式: { content: [], totalElements: 0 }
+      setRooms(data.content || [], data.totalElements || 0)
       setPagination({ ...pagination, current: page, pageSize: size })
     } catch (error) {
       message.error(error.message || '加载会议室列表失败')
@@ -114,6 +116,43 @@ function Rooms() {
           removeRoom(room.id)
         } catch (error) {
           message.error(error.message || '强制关闭失败')
+        }
+      },
+    })
+  }
+
+  // 强制关闭所有会议室
+  const handleForceCloseAll = () => {
+    confirm({
+      title: '⚠️ 危险操作：强制清理所有会议室',
+      icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+      content: (
+        <div>
+          <p style={{ marginBottom: '8px', fontWeight: 'bold', color: '#ff4d4f' }}>
+            此操作将强制关闭所有进行中的会议室！
+          </p>
+          <p style={{ marginBottom: '8px' }}>
+            • 所有参与者将被立即移出会议室
+          </p>
+          <p style={{ marginBottom: '8px' }}>
+            • 正在进行的录制将被停止
+          </p>
+          <p style={{ marginBottom: '0' }}>
+            • 此操作不可撤销，请谨慎操作！
+          </p>
+        </div>
+      ),
+      okText: '确认清理',
+      okType: 'danger',
+      cancelText: '取消',
+      width: 500,
+      onOk: async () => {
+        try {
+          const result = await forceCloseAllRooms('管理员批量清理')
+          message.success(`已成功关闭 ${result} 个会议室`)
+          loadRooms()
+        } catch (error) {
+          message.error(error.message || '批量关闭失败')
         }
       },
     })
@@ -263,25 +302,34 @@ function Rooms() {
 
       {/* 搜索和筛选 */}
       <Card style={{ marginBottom: '16px' }}>
-        <Space size="middle" wrap>
-          <Search
-            placeholder="搜索会议室名称或 ID"
-            allowClear
-            enterButton={<SearchOutlined />}
-            style={{ width: 300 }}
-            onSearch={handleSearch}
-          />
-          <Select
-            value={filters.status}
-            style={{ width: 120 }}
-            onChange={handleStatusChange}
+        <Space size="middle" wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Space size="middle" wrap>
+            <Search
+              placeholder="搜索会议室名称或 ID"
+              allowClear
+              enterButton={<SearchOutlined />}
+              style={{ width: 300 }}
+              onSearch={handleSearch}
+            />
+            <Select
+              value={filters.status}
+              style={{ width: 120 }}
+              onChange={handleStatusChange}
+            >
+              <Option value="all">全部状态</Option>
+              <Option value="active">进行中</Option>
+              <Option value="inactive">已结束</Option>
+            </Select>
+            <Button icon={<ReloadOutlined />} onClick={() => loadRooms()}>
+              刷新
+            </Button>
+          </Space>
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={handleForceCloseAll}
           >
-            <Option value="all">全部状态</Option>
-            <Option value="active">进行中</Option>
-            <Option value="inactive">已结束</Option>
-          </Select>
-          <Button icon={<ReloadOutlined />} onClick={() => loadRooms()}>
-            刷新
+            强制清理所有会议室
           </Button>
         </Space>
       </Card>

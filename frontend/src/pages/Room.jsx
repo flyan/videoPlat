@@ -26,7 +26,8 @@ import {
   getParticipants,
   getAgoraToken,
 } from '../services/room'
-import { startRecording, stopRecording } from '../services/recording'
+// 录制功能已禁用
+// import { startRecording, stopRecording } from '../services/recording'
 import { sendChatMessage, getChatHistory } from '../services/chat'
 import websocketService from '../services/websocket'
 import VideoGrid from '../components/VideoGrid'
@@ -105,7 +106,7 @@ const Room = () => {
           console.log('WebSocket 连接成功')
         } catch (error) {
           console.error('WebSocket 连接失败:', error)
-          message.warning('实时聊天功能可能无法使用')
+          // 静默处理，不显示警告消息
         }
 
         // 加载聊天历史
@@ -140,6 +141,36 @@ const Room = () => {
       joinChannel()
     }
   }, [agoraToken])
+
+  /**
+   * 监听 WebSocket 消息
+   */
+  useEffect(() => {
+    const handleChatMessage = (data) => {
+      // 只处理当前会议室的消息
+      if (data.roomId === roomId) {
+        setChatMessages((prev) => [...prev, data])
+
+        // 滚动到底部
+        setTimeout(() => {
+          chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+        }, 100)
+
+        // 如果聊天面板未打开，显示新消息提示
+        if (sidebarContent !== 'chat' || !sidebarVisible) {
+          message.info(`${data.username}: ${data.content}`)
+        }
+      }
+    }
+
+    // 注册消息处理器
+    websocketService.onMessage('chat', handleChatMessage)
+
+    // 清理函数
+    return () => {
+      websocketService.offMessage('chat')
+    }
+  }, [roomId, sidebarContent, sidebarVisible])
 
   /**
    * 同步本地音频状态
@@ -195,27 +226,31 @@ const Room = () => {
   }
 
   /**
-   * 切换录制
+   * 切换录制（已禁用）
    */
   const handleToggleRecording = async () => {
-    if (!isHost) {
-      message.warning('只有主持人可以控制录制')
-      return
-    }
+    message.warning('录制功能已禁用')
+    return
 
-    try {
-      if (isRecording) {
-        await stopRecording(roomId)
-        setRecording(false)
-        message.success('录制已停止')
-      } else {
-        const data = await startRecording(roomId)
-        setRecording(true, data.recordingId)
-        message.success('开始录制')
-      }
-    } catch (error) {
-      message.error(error.message || '录制操作失败')
-    }
+    // 以下代码已禁用
+    // if (!isHost) {
+    //   message.warning('只有主持人可以控制录制')
+    //   return
+    // }
+
+    // try {
+    //   if (isRecording) {
+    //     await stopRecording(roomId)
+    //     setRecording(false)
+    //     message.success('录制已停止')
+    //   } else {
+    //     const data = await startRecording(roomId)
+    //     setRecording(true, data.recordingId)
+    //     message.success('开始录制')
+    //   }
+    // } catch (error) {
+    //   message.error(error.message || '录制操作失败')
+    // }
   }
 
   /**
@@ -237,26 +272,24 @@ const Room = () => {
   /**
    * 发送聊天消息
    */
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!chatInput.trim()) {
       return
     }
 
-    const newMessage = {
-      id: Date.now(),
-      userId: user?.id,
-      username: user?.nickname || user?.username,
-      content: chatInput.trim(),
-      timestamp: new Date().toISOString(),
+    try {
+      // 通过 HTTP API 发送消息（后端会通过 WebSocket 广播）
+      await sendChatMessage(roomId, chatInput.trim())
+      setChatInput('')
+
+      // 滚动到底部
+      setTimeout(() => {
+        chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+    } catch (error) {
+      console.error('发送消息失败:', error)
+      message.error('发送消息失败')
     }
-
-    setChatMessages((prev) => [...prev, newMessage])
-    setChatInput('')
-
-    // 滚动到底部
-    setTimeout(() => {
-      chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, 100)
   }
 
   /**
@@ -278,10 +311,13 @@ const Room = () => {
       if (roomId) {
         await leaveRoom(roomId)
       }
+      // 断开 WebSocket
+      websocketService.disconnect()
       resetRoom()
       navigate('/')
     } catch (error) {
       console.error('离开会议失败:', error)
+      websocketService.disconnect()
       navigate('/')
     }
   }
@@ -299,6 +335,7 @@ const Room = () => {
         try {
           await endRoom(roomId)
           await leaveChannel()
+          websocketService.disconnect()
           resetRoom()
           message.success('会议已结束')
           navigate('/')

@@ -35,16 +35,61 @@ export const useWebRTC = (roomId, userId, token) => {
       await client.join(AGORA_APP_ID, roomId, token, userId)
       setIsJoined(true)
 
-      // 创建本地音视频轨道
-      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks()
-      setLocalAudioTrack(audioTrack)
-      setLocalVideoTrack(videoTrack)
+      // 尝试创建本地音视频轨道
+      let audioTrack = null
+      let videoTrack = null
 
-      // 发布本地轨道
-      await client.publish([audioTrack, videoTrack])
-      setIsPublished(true)
+      try {
+        // 检查浏览器是否支持 getUserMedia
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('您的浏览器不支持音视频功能，请使用 HTTPS 访问或更换浏览器')
+        }
 
-      message.success('成功加入会议')
+        // 尝试同时创建音频和视频轨道
+        try {
+          [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks()
+        } catch (avError) {
+          console.warn('无法同时获取音视频，尝试仅获取音频:', avError)
+
+          // 如果失败，尝试只创建音频轨道
+          try {
+            audioTrack = await AgoraRTC.createMicrophoneAudioTrack()
+            message.warning('无法访问摄像头，已切换为纯音频模式')
+          } catch (audioError) {
+            console.warn('无法获取音频:', audioError)
+            message.warning('无法访问麦克风和摄像头，您将以观众模式加入')
+          }
+        }
+
+        // 设置本地轨道
+        if (audioTrack) {
+          setLocalAudioTrack(audioTrack)
+        }
+        if (videoTrack) {
+          setLocalVideoTrack(videoTrack)
+        }
+
+        // 发布可用的轨道
+        const tracksToPublish = []
+        if (audioTrack) tracksToPublish.push(audioTrack)
+        if (videoTrack) tracksToPublish.push(videoTrack)
+
+        if (tracksToPublish.length > 0) {
+          await client.publish(tracksToPublish)
+          setIsPublished(true)
+        }
+
+        if (audioTrack && videoTrack) {
+          message.success('成功加入会议')
+        } else if (audioTrack) {
+          message.success('已加入会议（纯音频模式）')
+        } else {
+          message.success('已加入会议（观众模式）')
+        }
+      } catch (mediaError) {
+        console.error('获取媒体设备失败:', mediaError)
+        message.warning('无法访问摄像头和麦克风，您将以观众模式加入会议')
+      }
     } catch (error) {
       console.error('加入频道失败:', error)
       message.error(`加入会议失败: ${error.message}`)
@@ -156,28 +201,37 @@ export const useWebRTC = (roomId, userId, token) => {
 
     // 远程用户发布音视频流
     const handleUserPublished = async (user, mediaType) => {
-      await client.subscribe(user, mediaType)
+      console.log('远程用户发布流:', user.uid, mediaType)
+      try {
+        await client.subscribe(user, mediaType)
+        console.log('订阅成功:', user.uid, mediaType)
 
-      setRemoteUsers((prevUsers) => {
-        const existingUser = prevUsers.find(u => u.uid === user.uid)
-        if (existingUser) {
-          return prevUsers.map(u =>
-            u.uid === user.uid
-              ? { ...u, [mediaType === 'audio' ? 'audioTrack' : 'videoTrack']: user[`${mediaType}Track`] }
-              : u
-          )
-        } else {
-          return [...prevUsers, {
-            uid: user.uid,
-            audioTrack: mediaType === 'audio' ? user.audioTrack : null,
-            videoTrack: mediaType === 'video' ? user.videoTrack : null,
-          }]
-        }
-      })
+        setRemoteUsers((prevUsers) => {
+          const existingUser = prevUsers.find(u => u.uid === user.uid)
+          if (existingUser) {
+            console.log('更新现有用户:', user.uid)
+            return prevUsers.map(u =>
+              u.uid === user.uid
+                ? { ...u, [mediaType === 'audio' ? 'audioTrack' : 'videoTrack']: user[`${mediaType}Track`] }
+                : u
+            )
+          } else {
+            console.log('添加新用户:', user.uid)
+            return [...prevUsers, {
+              uid: user.uid,
+              audioTrack: mediaType === 'audio' ? user.audioTrack : null,
+              videoTrack: mediaType === 'video' ? user.videoTrack : null,
+            }]
+          }
+        })
+      } catch (error) {
+        console.error('订阅失败:', user.uid, mediaType, error)
+      }
     }
 
     // 远程用户取消发布音视频流
     const handleUserUnpublished = (user, mediaType) => {
+      console.log('远程用户取消发布流:', user.uid, mediaType)
       setRemoteUsers((prevUsers) =>
         prevUsers.map(u =>
           u.uid === user.uid
@@ -189,14 +243,17 @@ export const useWebRTC = (roomId, userId, token) => {
 
     // 远程用户离开频道
     const handleUserLeft = (user) => {
+      console.log('远程用户离开:', user.uid)
       setRemoteUsers((prevUsers) => prevUsers.filter(u => u.uid !== user.uid))
     }
 
+    console.log('注册事件监听器')
     client.on('user-published', handleUserPublished)
     client.on('user-unpublished', handleUserUnpublished)
     client.on('user-left', handleUserLeft)
 
     return () => {
+      console.log('移除事件监听器')
       client.off('user-published', handleUserPublished)
       client.off('user-unpublished', handleUserUnpublished)
       client.off('user-left', handleUserLeft)

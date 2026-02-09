@@ -49,7 +49,20 @@ public class AdminRoomService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Room> roomPage = roomRepository.findAll(pageable);
 
-        return roomPage.map(this::convertToRoomStatusDto);
+        // 批量查询创建者信息
+        List<Long> creatorIds = roomPage.getContent().stream()
+                .map(Room::getCreatorId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<User> creators = creatorIds.isEmpty() ? List.of() : userRepository.findAllById(creatorIds);
+
+        // 批量查询参与者数量
+        List<Long> roomIds = roomPage.getContent().stream()
+                .map(Room::getId)
+                .collect(Collectors.toList());
+
+        return roomPage.map(room -> convertToRoomStatusDtoSimple(room, creators));
     }
 
     /**
@@ -108,6 +121,89 @@ public class AdminRoomService {
         participantRepository.saveAll(participants);
 
         log.info("会议室 {} 被强制关闭，原因: {}", roomId, reason);
+    }
+
+    /**
+     * 强制关闭所有进行中的会议室
+     *
+     * @param reason 关闭原因
+     * @return 关闭的会议室数量
+     */
+    @Transactional
+    public int forceCloseAllRooms(String reason) {
+        List<Room> activeRooms = roomRepository.findByStatus(RoomStatus.ACTIVE);
+
+        if (activeRooms.isEmpty()) {
+            return 0;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 关闭所有进行中的会议室
+        for (Room room : activeRooms) {
+            room.setStatus(RoomStatus.ENDED);
+            room.setEndedAt(now);
+
+            // 所有参与者离开
+            List<RoomParticipant> participants = participantRepository
+                    .findByRoomIdAndLeftAtIsNull(room.getId());
+            participants.forEach(p -> p.setLeftAt(now));
+            participantRepository.saveAll(participants);
+        }
+
+        roomRepository.saveAll(activeRooms);
+
+        log.info("强制关闭所有会议室，共 {} 个，原因: {}", activeRooms.size(), reason);
+
+        return activeRooms.size();
+    }
+
+    /**
+     * 将会议室实体转换为会议室状态 DTO（简化版，用于列表页面）
+     */
+    private RoomStatusDto convertToRoomStatusDtoSimple(Room room, List<User> creators) {
+        // 从缓存的创建者列表中查找
+        Optional<User> creator = creators.stream()
+                .filter(u -> u.getId().equals(room.getCreatorId()))
+                .findFirst();
+
+        // 获取当前参与者数量
+        long currentParticipants = participantRepository.countByRoomIdAndLeftAtIsNull(room.getId());
+
+        // 计算会议持续时长
+        Long durationMinutes = null;
+        if (room.getEndedAt() != null) {
+            Duration duration = Duration.between(room.getCreatedAt(), room.getEndedAt());
+            durationMinutes = duration.toMinutes();
+        } else if (room.getStatus() == RoomStatus.ACTIVE) {
+            Duration duration = Duration.between(room.getCreatedAt(), LocalDateTime.now());
+            durationMinutes = duration.toMinutes();
+        }
+
+        RoomStatusDto dto = RoomStatusDto.builder()
+                .id(room.getId())
+                .roomId(room.getRoomId())
+                .roomName(room.getRoomName())
+                .creatorId(room.getCreatorId())
+                .maxParticipants(room.getMaxParticipants())
+                .currentParticipants((int) currentParticipants)
+                .status(room.getStatus())
+                .hasPassword(room.getPasswordHash() != null)
+                .createdAt(room.getCreatedAt())
+                .endedAt(room.getEndedAt())
+                .durationMinutes(durationMinutes)
+                .build();
+
+        // 设置创建者信息
+        creator.ifPresent(user -> {
+            dto.setCreatorUsername(user.getUsername());
+            dto.setCreatorNickname(user.getNickname());
+        });
+
+        // 列表页面不加载参与者详情，只在详情页加载
+        dto.setParticipants(List.of());
+
+        return dto;
     }
 
     /**

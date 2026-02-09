@@ -1,6 +1,8 @@
 package com.videoplat.meeting.controller;
 
 import com.videoplat.common.dto.ApiResponse;
+import com.videoplat.domain.entity.User;
+import com.videoplat.domain.repository.UserRepository;
 import com.videoplat.meeting.dto.ChatMessageDTO;
 import com.videoplat.meeting.service.ChatService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +32,7 @@ import java.util.Map;
 public class ChatController {
 
     private final ChatService chatService;
+    private final UserRepository userRepository;
 
     /**
      * 发送聊天消息
@@ -49,19 +52,24 @@ public class ChatController {
         try {
             String content = request.get("content");
             if (content == null || content.trim().isEmpty()) {
-                return ApiResponse.error(400, "消息内容不能为空");
+                return ApiResponse.error("消息内容不能为空");
             }
 
-            // 从认证信息中获取用户信息
+            // 从认证信息中获取用户 ID
             Long userId = Long.parseLong(authentication.getName());
-            String username = (String) ((Map<?, ?>) authentication.getDetails()).get("username");
+
+            // 从数据库获取用户信息
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+            String username = user.getNickname() != null ? user.getNickname() : user.getUsername();
 
             ChatMessageDTO message = chatService.sendMessage(roomId, userId, username, content);
             return ApiResponse.success(message);
 
         } catch (Exception e) {
             log.error("发送聊天消息失败", e);
-            return ApiResponse.error(500, "发送消息失败");
+            return ApiResponse.error("发送消息失败");
         }
     }
 
@@ -81,7 +89,7 @@ public class ChatController {
             return ApiResponse.success(messages);
         } catch (Exception e) {
             log.error("获取聊天历史失败", e);
-            return ApiResponse.error(500, "获取聊天历史失败");
+            return ApiResponse.error("获取聊天历史失败");
         }
     }
 
@@ -101,7 +109,7 @@ public class ChatController {
             return ApiResponse.success(null);
         } catch (Exception e) {
             log.error("清除聊天历史失败", e);
-            return ApiResponse.error(500, "清除聊天历史失败");
+            return ApiResponse.error("清除聊天历史失败");
         }
     }
 }

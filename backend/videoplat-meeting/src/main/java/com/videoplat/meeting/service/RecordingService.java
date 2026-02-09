@@ -5,16 +5,19 @@ import com.videoplat.domain.entity.Room;
 import com.videoplat.domain.enums.RoomStatus;
 import com.videoplat.domain.repository.RecordingRepository;
 import com.videoplat.domain.repository.RoomRepository;
+import com.videoplat.domain.specification.RecordingSpecification;
 import com.videoplat.meeting.dto.RecordingDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -34,10 +37,15 @@ public class RecordingService {
     private final RoomRepository roomRepository;
     private final AgoraService agoraService;
     private final AgoraCloudRecordingService cloudRecordingService;
+    private final LocalRecordingService localRecordingService;
 
     // 录制文件存储路径
     @Value("${app.recording.storage-path:/app/recordings}")
     private String storagePath;
+
+    // 录制模式：local（本地录制）或 cloud（云端录制）
+    @Value("${app.recording.mode:local}")
+    private String recordingMode;
 
     /**
      * 开始录制
@@ -78,38 +86,37 @@ public class RecordingService {
 
         recording = recordingRepository.save(recording);
 
-        log.info("开始录制: 会议室={}, 录制ID={}, 文件路径={}",
-                room.getRoomName(), recording.getId(), filePath);
+        log.info("开始录制: 会议室={}, 录制ID={}, 模式={}, 文件路径={}",
+                room.getRoomName(), recording.getId(), recordingMode, filePath);
 
-        // 调用 Agora 云端录制 API
+        // 根据配置选择录制模式
         try {
-            if (cloudRecordingService.isConfigured()) {
-                // 1. 获取 Resource ID
-                String resourceId = cloudRecordingService.acquireResource(roomId, userId.toString());
-                recording.setAgoraResourceId(resourceId);
-
-                // 2. 获取 RTC Token
-                String token = agoraService.generateRtcToken(roomId, userId.intValue());
-
-                // 3. 开始云端录制
-                String sid = cloudRecordingService.startRecording(
-                        resourceId, roomId, userId.toString(), token);
-                recording.setAgoraSid(sid);
-                recording.setStatus("RECORDING");
-
-                recordingRepository.save(recording);
-
-                log.info("Agora 云端录制已启动: resourceId={}, sid={}", resourceId, sid);
+            if ("local".equalsIgnoreCase(recordingMode)) {
+                // 本地服务端录制
+                if (localRecordingService.isConfigured()) {
+                    startLocalRecording(recording, room, userId);
+                } else {
+                    log.warn("本地录制服务未配置，仅创建录制记录");
+                    recording.setStatus("RECORDING");
+                    recordingRepository.save(recording);
+                }
+            } else if ("cloud".equalsIgnoreCase(recordingMode)) {
+                // 云端录制
+                if (cloudRecordingService.isConfigured()) {
+                    startCloudRecording(recording, room, userId);
+                } else {
+                    log.warn("云端录制服务未配置，仅创建录制记录");
+                    recording.setStatus("RECORDING");
+                    recordingRepository.save(recording);
+                }
             } else {
-                log.warn("Agora 云端录制未配置，仅创建录制记录");
-                recording.setStatus("RECORDING");
-                recordingRepository.save(recording);
+                throw new RuntimeException("不支持的录制模式: " + recordingMode);
             }
         } catch (Exception e) {
-            log.error("启动 Agora 云端录制失败: {}", e.getMessage(), e);
+            log.error("启动录制失败: {}", e.getMessage(), e);
             recording.setStatus("FAILED");
             recordingRepository.save(recording);
-            throw new RuntimeException("启动云端录制失败: " + e.getMessage());
+            throw new RuntimeException("启动录制失败: " + e.getMessage());
         }
 
         return convertToDto(recording);
@@ -157,40 +164,17 @@ public class RecordingService {
         recording.setEndedAt(LocalDateTime.now());
         recording.setStatus("STOPPING");
 
-        // 调用 Agora 云端录制 API 停止录制
+        // 根据录制模式停止录制
         try {
-            if (recording.getAgoraResourceId() != null && recording.getAgoraSid() != null) {
-                Room room = roomRepository.findById(recording.getRoomId())
-                        .orElseThrow(() -> new RuntimeException("会议室不存在"));
-
-                Map<String, Object> result = cloudRecordingService.stopRecording(
-                        recording.getAgoraResourceId(),
-                        recording.getAgoraSid(),
-                        room.getRoomId(),
-                        recording.getCreatorId().toString()
-                );
-
-                // 从返回结果中获取文件信息
-                if (result != null && result.containsKey("fileList")) {
-                    List<Map<String, Object>> fileList = (List<Map<String, Object>>) result.get("fileList");
-                    if (!fileList.isEmpty()) {
-                        Map<String, Object> fileInfo = fileList.get(0);
-                        if (fileInfo.containsKey("fileName")) {
-                            String fileName = (String) fileInfo.get("fileName");
-                            recording.setFilePath(storagePath + File.separator + fileName);
-                        }
-                    }
-                }
-
-                recording.setStatus("COMPLETED");
-                log.info("Agora 云端录制已停止: resourceId={}, sid={}",
-                        recording.getAgoraResourceId(), recording.getAgoraSid());
-            } else {
-                recording.setStatus("COMPLETED");
-                log.warn("录制未使用 Agora 云端录制");
+            if ("local".equalsIgnoreCase(recordingMode)) {
+                // 停止本地录制
+                stopLocalRecording(recording, roomId);
+            } else if ("cloud".equalsIgnoreCase(recordingMode)) {
+                // 停止云端录制
+                stopCloudRecording(recording);
             }
         } catch (Exception e) {
-            log.error("停止 Agora 云端录制失败: {}", e.getMessage(), e);
+            log.error("停止录制失败: {}", e.getMessage(), e);
             recording.setStatus("FAILED");
         }
 
@@ -218,7 +202,8 @@ public class RecordingService {
      */
     @Transactional(readOnly = true)
     public List<RecordingDto> getRecordings(String roomName, LocalDateTime startDate, LocalDateTime endDate) {
-        List<Recording> recordings = recordingRepository.findByFilters(roomName, startDate, endDate);
+        Specification<Recording> spec = RecordingSpecification.withFilters(roomName, startDate, endDate);
+        List<Recording> recordings = recordingRepository.findAll(spec);
         return recordings.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -271,6 +256,112 @@ public class RecordingService {
         recordingRepository.delete(recording);
 
         log.info("删除录制: 录制ID={}, 用户ID={}", recordingId, userId);
+    }
+
+    /**
+     * 启动本地服务端录制
+     */
+    private void startLocalRecording(Recording recording, Room room, Long userId) {
+        if (!localRecordingService.isConfigured()) {
+            throw new RuntimeException("本地录制服务未配置，请检查录制器路径");
+        }
+
+        // 获取 RTC Token
+        String token = agoraService.generateRtcToken(room.getRoomId(), userId.intValue());
+
+        // 启动本地录制
+        String filePath = localRecordingService.startRecording(
+                room.getRoomId(),
+                token,
+                userId.toString()
+        );
+
+        recording.setFilePath(filePath);
+        recording.setStatus("RECORDING");
+        recordingRepository.save(recording);
+
+        log.info("本地录制已启动: roomId={}, filePath={}", room.getRoomId(), filePath);
+    }
+
+    /**
+     * 停止本地服务端录制
+     */
+    private void stopLocalRecording(Recording recording, String roomId) {
+        String filePath = localRecordingService.stopRecording(roomId);
+        if (filePath != null) {
+            recording.setFilePath(filePath);
+        }
+        recording.setStatus("COMPLETED");
+        log.info("本地录制已停止: roomId={}, filePath={}", roomId, filePath);
+    }
+
+    /**
+     * 启动云端录制
+     */
+    private void startCloudRecording(Recording recording, Room room, Long userId) {
+        if (!cloudRecordingService.isConfigured()) {
+            throw new RuntimeException("云端录制服务未配置，请检查 Agora 配置");
+        }
+
+        // 1. 获取 Resource ID
+        String resourceId = cloudRecordingService.acquireResource(
+                room.getRoomId(),
+                userId.toString()
+        );
+        recording.setAgoraResourceId(resourceId);
+
+        // 2. 获取 RTC Token
+        String token = agoraService.generateRtcToken(room.getRoomId(), userId.intValue());
+
+        // 3. 开始云端录制
+        String sid = cloudRecordingService.startRecording(
+                resourceId,
+                room.getRoomId(),
+                userId.toString(),
+                token
+        );
+        recording.setAgoraSid(sid);
+        recording.setStatus("RECORDING");
+
+        recordingRepository.save(recording);
+
+        log.info("云端录制已启动: resourceId={}, sid={}", resourceId, sid);
+    }
+
+    /**
+     * 停止云端录制
+     */
+    private void stopCloudRecording(Recording recording) {
+        if (recording.getAgoraResourceId() != null && recording.getAgoraSid() != null) {
+            Room room = roomRepository.findById(recording.getRoomId())
+                    .orElseThrow(() -> new RuntimeException("会议室不存在"));
+
+            Map<String, Object> result = cloudRecordingService.stopRecording(
+                    recording.getAgoraResourceId(),
+                    recording.getAgoraSid(),
+                    room.getRoomId(),
+                    recording.getCreatorId().toString()
+            );
+
+            // 从返回结果中获取文件信息
+            if (result != null && result.containsKey("fileList")) {
+                List<Map<String, Object>> fileList = (List<Map<String, Object>>) result.get("fileList");
+                if (!fileList.isEmpty()) {
+                    Map<String, Object> fileInfo = fileList.get(0);
+                    if (fileInfo.containsKey("fileName")) {
+                        String fileName = (String) fileInfo.get("fileName");
+                        recording.setFilePath(storagePath + File.separator + fileName);
+                    }
+                }
+            }
+
+            recording.setStatus("COMPLETED");
+            log.info("云端录制已停止: resourceId={}, sid={}",
+                    recording.getAgoraResourceId(), recording.getAgoraSid());
+        } else {
+            recording.setStatus("COMPLETED");
+            log.warn("录制未使用云端录制");
+        }
     }
 
     /**

@@ -111,6 +111,38 @@ public class AdminRoomController {
     }
 
     /**
+     * 强制关闭所有会议室
+     */
+    @PostMapping("/force-close-all")
+    @Operation(summary = "强制关闭所有会议室", description = "管理员强制关闭所有进行中的会议室")
+    public ApiResponse<Integer> forceCloseAllRooms(
+            @Valid @RequestBody CloseRoomRequest request,
+            HttpServletRequest httpRequest) {
+
+        Long adminId = SecurityUtils.getCurrentUserId();
+        String adminUsername = SecurityUtils.getCurrentUsername();
+
+        log.info("管理员 {} 强制关闭所有会议室，原因: {}", adminUsername, request.getReason());
+
+        // 执行强制关闭所有会议室
+        int closedCount = adminRoomService.forceCloseAllRooms(request.getReason());
+
+        // 记录操作日志
+        String operationDetail = String.format("强制关闭所有会议室，共 %d 个，原因: %s", closedCount, request.getReason());
+        operationLogService.saveOperationLog(
+                adminId,
+                adminUsername,
+                AdminOperationType.CLOSE_ROOM,
+                null,
+                null,
+                operationDetail,
+                getClientIp(httpRequest)
+        );
+
+        return ApiResponse.success(String.format("已强制关闭 %d 个会议室", closedCount), closedCount);
+    }
+
+    /**
      * 获取客户端 IP 地址
      */
     private String getClientIp(HttpServletRequest request) {

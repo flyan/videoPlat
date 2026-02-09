@@ -23,6 +23,7 @@ import java.util.List;
  * 录制控制器
  *
  * 处理会议录制相关的 HTTP 请求
+ * 注意：新建录制功能已禁用，但可以查看和播放已有的录制记录
  *
  * @author VideoPlat Team
  * @since 1.0
@@ -36,23 +37,20 @@ public class RecordingController {
     private final RecordingService recordingService;
 
     @PostMapping("/rooms/{roomId}/recordings/start")
-    @Operation(summary = "开始录制")
+    @Operation(summary = "开始录制（已禁用）")
     public ResponseEntity<ApiResponse<RecordingDto>> startRecording(
             @PathVariable String roomId,
             Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
-        RecordingDto recording = recordingService.startRecording(roomId, userId);
-        return ResponseEntity.ok(ApiResponse.success(recording));
+        return ResponseEntity.ok(ApiResponse.error("录制功能已禁用"));
     }
 
     @PostMapping("/rooms/{roomId}/recordings/stop")
-    @Operation(summary = "停止录制")
+    @Operation(summary = "停止录制（已禁用）")
     public ResponseEntity<ApiResponse<Void>> stopRecording(
             @PathVariable String roomId,
             @RequestParam(required = false) Long recordingId,
             Authentication authentication) {
-        recordingService.stopRecording(roomId, recordingId);
-        return ResponseEntity.ok(ApiResponse.success("录制已停止", null));
+        return ResponseEntity.ok(ApiResponse.error("录制功能已禁用"));
     }
 
     @GetMapping("/recordings")

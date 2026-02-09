@@ -20,6 +20,13 @@ public class SecurityUtils {
         if (principal instanceof Long) {
             return (Long) principal;
         }
+        if (principal instanceof String) {
+            try {
+                return Long.parseLong((String) principal);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
         return null;
     }
 

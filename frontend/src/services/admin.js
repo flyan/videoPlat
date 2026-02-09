@@ -10,7 +10,7 @@ import apiClient from './api'
  * 获取系统统计信息
  */
 export const getStatistics = async () => {
-  return apiClient.get('/admin/statistics')
+  return apiClient.get('/v1/admin/statistics')
 }
 
 /**
@@ -23,7 +23,7 @@ export const getStatistics = async () => {
  * @param {string} params.role - 用户角色（admin/user/guest/all）
  */
 export const getUsers = async (params) => {
-  return apiClient.get('/admin/users', { params })
+  return apiClient.get('/v1/admin/users', { params })
 }
 
 /**
@@ -31,7 +31,7 @@ export const getUsers = async (params) => {
  * @param {number} userId - 用户 ID
  */
 export const getUserDetail = async (userId) => {
-  return apiClient.get(`/admin/users/${userId}`)
+  return apiClient.get(`/v1/admin/users/${userId}`)
 }
 
 /**
@@ -39,7 +39,7 @@ export const getUserDetail = async (userId) => {
  * @param {number} userId - 用户 ID
  */
 export const forceLogoutUser = async (userId) => {
-  return apiClient.post(`/admin/users/${userId}/logout`)
+  return apiClient.post(`/v1/admin/users/${userId}/logout`)
 }
 
 /**
@@ -48,7 +48,7 @@ export const forceLogoutUser = async (userId) => {
  * @param {string} reason - 禁用原因
  */
 export const disableUser = async (userId, reason) => {
-  return apiClient.post(`/admin/users/${userId}/disable`, { reason })
+  return apiClient.post(`/v1/admin/users/${userId}/disable`, { reason })
 }
 
 /**
@@ -56,7 +56,7 @@ export const disableUser = async (userId, reason) => {
  * @param {number} userId - 用户 ID
  */
 export const enableUser = async (userId) => {
-  return apiClient.post(`/admin/users/${userId}/enable`)
+  return apiClient.post(`/v1/admin/users/${userId}/enable`)
 }
 
 /**
@@ -64,7 +64,7 @@ export const enableUser = async (userId) => {
  * @param {number} userId - 用户 ID
  */
 export const deleteUser = async (userId) => {
-  return apiClient.delete(`/admin/users/${userId}`)
+  return apiClient.delete(`/v1/admin/users/${userId}`)
 }
 
 /**
@@ -76,7 +76,7 @@ export const deleteUser = async (userId) => {
  * @param {string} params.status - 会议室状态（active/inactive/all）
  */
 export const getRooms = async (params) => {
-  return apiClient.get('/admin/rooms', { params })
+  return apiClient.get('/v1/admin/rooms', { params })
 }
 
 /**
@@ -84,7 +84,7 @@ export const getRooms = async (params) => {
  * @param {string} roomId - 会议室 ID
  */
 export const getRoomDetail = async (roomId) => {
-  return apiClient.get(`/admin/rooms/${roomId}`)
+  return apiClient.get(`/v1/admin/rooms/${roomId}`)
 }
 
 /**
@@ -93,7 +93,15 @@ export const getRoomDetail = async (roomId) => {
  * @param {string} reason - 关闭原因
  */
 export const forceCloseRoom = async (roomId, reason) => {
-  return apiClient.post(`/admin/rooms/${roomId}/close`, { reason })
+  return apiClient.post(`/v1/admin/rooms/${roomId}/close`, { reason })
+}
+
+/**
+ * 强制关闭所有会议室
+ * @param {string} reason - 关闭原因
+ */
+export const forceCloseAllRooms = async (reason) => {
+  return apiClient.post('/v1/admin/rooms/force-close-all', { reason })
 }
 
 /**
@@ -102,7 +110,7 @@ export const forceCloseRoom = async (roomId, reason) => {
  * @param {number} userId - 用户 ID
  */
 export const removeUserFromRoom = async (roomId, userId) => {
-  return apiClient.post(`/admin/rooms/${roomId}/remove-user`, { userId })
+  return apiClient.post(`/v1/admin/rooms/${roomId}/remove-user`, { userId })
 }
 
 /**
@@ -115,7 +123,7 @@ export const removeUserFromRoom = async (roomId, userId) => {
  * @param {string} params.endDate - 结束日期
  */
 export const getRecordings = async (params) => {
-  return apiClient.get('/admin/recordings', { params })
+  return apiClient.get('/v1/admin/recordings', { params })
 }
 
 /**
@@ -123,7 +131,7 @@ export const getRecordings = async (params) => {
  * @param {number} recordingId - 录制 ID
  */
 export const getRecordingDetail = async (recordingId) => {
-  return apiClient.get(`/admin/recordings/${recordingId}`)
+  return apiClient.get(`/v1/admin/recordings/${recordingId}`)
 }
 
 /**
@@ -131,7 +139,7 @@ export const getRecordingDetail = async (recordingId) => {
  * @param {number} recordingId - 录制 ID
  */
 export const deleteRecording = async (recordingId) => {
-  return apiClient.delete(`/admin/recordings/${recordingId}`)
+  return apiClient.delete(`/v1/admin/recordings/${recordingId}`)
 }
 
 /**
@@ -139,7 +147,7 @@ export const deleteRecording = async (recordingId) => {
  * @param {number[]} recordingIds - 录制 ID 数组
  */
 export const batchDeleteRecordings = async (recordingIds) => {
-  return apiClient.post('/admin/recordings/batch-delete', { recordingIds })
+  return apiClient.post('/v1/admin/recordings/batch-delete', { recordingIds })
 }
 
 /**
@@ -153,7 +161,7 @@ export const batchDeleteRecordings = async (recordingIds) => {
  * @param {string} params.endDate - 结束日期
  */
 export const getOperationLogs = async (params) => {
-  return apiClient.get('/admin/logs', { params })
+  return apiClient.get('/v1/admin/logs', { params })
 }
 
 /**
@@ -161,7 +169,7 @@ export const getOperationLogs = async (params) => {
  * @param {Object} params - 查询参数
  */
 export const exportOperationLogs = async (params) => {
-  return apiClient.get('/admin/logs/export', {
+  return apiClient.get('/v1/admin/logs/export', {
     params,
     responseType: 'blob',
   })
@@ -171,7 +179,7 @@ export const exportOperationLogs = async (params) => {
  * 获取系统配置
  */
 export const getSystemConfig = async () => {
-  return apiClient.get('/admin/config')
+  return apiClient.get('/v1/admin/config')
 }
 
 /**
@@ -179,5 +187,5 @@ export const getSystemConfig = async () => {
  * @param {Object} config - 配置对象
  */
 export const updateSystemConfig = async (config) => {
-  return apiClient.put('/admin/config', config)
+  return apiClient.put('/v1/admin/config', config)
 }

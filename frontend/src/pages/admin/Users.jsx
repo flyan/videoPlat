@@ -64,11 +64,12 @@ function Users() {
     setUsersLoading(true)
     try {
       const data = await getUsers({
-        page,
+        page: page - 1, // Spring Data Page 从 0 开始
         size,
         ...filters,
       })
-      setUsers(data.list || [], data.total || 0)
+      // Spring Data Page 格式: { content: [], totalElements: 0 }
+      setUsers(data.content || [], data.totalElements || 0)
       setPagination({ ...pagination, current: page, pageSize: size })
     } catch (error) {
       message.error(error.message || '加载用户列表失败')

@@ -1,4 +1,4 @@
-import axios from './axios'
+import apiClient from './api'
 
 /**
  * 发送聊天消息
@@ -8,10 +8,10 @@ import axios from './axios'
  * @returns {Promise<object>} 消息对象
  */
 export const sendChatMessage = async (roomId, content) => {
-  const response = await axios.post(`/api/v1/chat/rooms/${roomId}/messages`, {
+  const response = await apiClient.post(`/api/v1/chat/rooms/${roomId}/messages`, {
     content,
   })
-  return response.data
+  return response
 }
 
 /**
@@ -21,8 +21,8 @@ export const sendChatMessage = async (roomId, content) => {
  * @returns {Promise<Array>} 消息列表
  */
 export const getChatHistory = async (roomId) => {
-  const response = await axios.get(`/api/v1/chat/rooms/${roomId}/messages`)
-  return response.data
+  const response = await apiClient.get(`/api/v1/chat/rooms/${roomId}/messages`)
+  return response
 }
 
 /**
@@ -32,6 +32,6 @@ export const getChatHistory = async (roomId) => {
  * @returns {Promise<void>}
  */
 export const clearChatHistory = async (roomId) => {
-  const response = await axios.delete(`/api/v1/chat/rooms/${roomId}/messages`)
-  return response.data
+  const response = await apiClient.delete(`/api/v1/chat/rooms/${roomId}/messages`)
+  return response
 }

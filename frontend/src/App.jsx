@@ -15,7 +15,7 @@ function App() {
   const { isAuthenticated, user } = useAuthStore()
 
   // 检查是否是管理员
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = user?.role === 'ADMIN'
 
   return (
     <Routes>

@@ -1,6 +1,11 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import { fileURLToPath } from 'url'
+import { dirname, resolve } from 'path'
+
+// 获取当前文件的目录路径（ESM 模块）
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 // Vite 配置文档: https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -14,7 +19,7 @@ export default defineConfig(({ mode }) => {
     // 路径别名配置
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),  // 使用 @ 代替 src 路径
+        '@': resolve(__dirname, './src'),  // 使用 @ 代替 src 路径
       },
     },
 

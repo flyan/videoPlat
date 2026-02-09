@@ -91,10 +91,13 @@ app:
         access-key: ${CLOUD_STORAGE_ACCESS_KEY:}
         secret-key: ${CLOUD_STORAGE_SECRET_KEY:}
 
-  # 会议录制配置
+  # 会议录制配置（已禁用）
   recording:
+    enabled: false  # 禁用录制功能
     storage-path: ${RECORDING_STORAGE_PATH:/app/recordings}  # 录制文件存储路径
     max-size-gb: ${RECORDING_MAX_SIZE_GB:100}  # 最大存储容量（GB）
+    mode: ${RECORDING_MODE:disabled}  # 录制模式：disabled（已禁用）
+    recorder-bin-path: ${RECORDER_BIN_PATH:/app/agora_recorder/recorder_local}  # 本地录制程序路径
 
   # 会议室限制配置
   room:
