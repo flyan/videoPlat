@@ -10,13 +10,70 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(0, 0, 0, 0.87);
-  background-color: #ffffff;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #0a0a1a;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* 色彩系统 - 赛博朋克暖色霓虹 */
+  --bg-dark: #0a0a1a;
+  --bg-darker: #050510;
+  --bg-gradient: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0f0520 100%);
+
+  /* 主要霓虹色 */
+  --neon-orange: #ff6b35;
+  --neon-pink: #ff1493;
+  --neon-purple: #d946ef;
+  --neon-gold: #ffd700;
+  --neon-cyan: #00ffff;
+
+  /* 兼容旧变量名 */
+  --primary-glow: #ff6b35;
+  --secondary-glow: #ff1493;
+  --accent-glow: #ffd700;
+  --particle-color: #ff6b35;
+
+  /* 功能性颜色 */
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #ff6b35;
+
+  /* 透明度变体 - 橙色霓虹 */
+  --primary-glow-10: rgba(255, 107, 53, 0.1);
+  --primary-glow-20: rgba(255, 107, 53, 0.2);
+  --primary-glow-30: rgba(255, 107, 53, 0.3);
+  --primary-glow-50: rgba(255, 107, 53, 0.5);
+
+  --neon-orange-10: rgba(255, 107, 53, 0.1);
+  --neon-orange-20: rgba(255, 107, 53, 0.2);
+  --neon-orange-30: rgba(255, 107, 53, 0.3);
+  --neon-orange-50: rgba(255, 107, 53, 0.5);
+
+  /* 透明度变体 - 粉色霓虹 */
+  --secondary-glow-10: rgba(255, 20, 147, 0.1);
+  --secondary-glow-20: rgba(255, 20, 147, 0.2);
+  --secondary-glow-30: rgba(255, 20, 147, 0.3);
+  --secondary-glow-50: rgba(255, 20, 147, 0.5);
+
+  --neon-pink-10: rgba(255, 20, 147, 0.1);
+  --neon-pink-20: rgba(255, 20, 147, 0.2);
+  --neon-pink-30: rgba(255, 20, 147, 0.3);
+  --neon-pink-50: rgba(255, 20, 147, 0.5);
+
+  /* 透明度变体 - 金色霓虹 */
+  --accent-glow-10: rgba(255, 215, 0, 0.1);
+  --accent-glow-20: rgba(255, 215, 0, 0.2);
+  --accent-glow-30: rgba(255, 215, 0, 0.3);
+  --accent-glow-50: rgba(255, 215, 0, 0.5);
+
+  --neon-gold-10: rgba(255, 215, 0, 0.1);
+  --neon-gold-20: rgba(255, 215, 0, 0.2);
+  --neon-gold-30: rgba(255, 215, 0, 0.3);
+  --neon-gold-50: rgba(255, 215, 0, 0.5);
 }
 
 * {
@@ -173,4 +230,284 @@ body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ========== 全局动画关键帧 ========== */
+
+/* 光线扫过效果 */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+/* 发光脉冲效果 */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--primary-glow-30), 0 0 40px var(--secondary-glow-20);
+  }
+  50% {
+    box-shadow: 0 0 30px var(--primary-glow-50), 0 0 60px var(--secondary-glow-30);
+  }
+}
+
+/* 边框发光效果 */
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: var(--primary-glow);
+    box-shadow: 0 0 10px var(--primary-glow-30);
+  }
+  50% {
+    border-color: var(--secondary-glow);
+    box-shadow: 0 0 20px var(--secondary-glow-30);
+  }
+}
+
+/* 边框旋转效果 */
+@keyframes borderRotate {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* 发言者脉冲效果 */
+@keyframes speakingPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--primary-glow-50), 0 0 40px var(--secondary-glow-30);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 30px var(--primary-glow), 0 0 60px var(--secondary-glow-50);
+    transform: scale(1.02);
+  }
+}
+
+/* 粒子漂浮效果 */
+@keyframes particleFloat {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-10px) translateX(5px);
+  }
+  50% {
+    transform: translateY(-5px) translateX(-5px);
+  }
+  75% {
+    transform: translateY(-15px) translateX(3px);
+  }
+}
+
+/* 渐入动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 缩放渐入 */
+@keyframes scaleInGlow {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ========== 性能优化类 ========== */
+
+/* GPU 加速 */
+.gpu-accelerated {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* 动画优化 */
+.optimized-animation {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* ========== 响应式动画降级 ========== */
+
+/* 移动端简化动画 */
+@media (max-width: 768px) {
+  .particle-background {
+    display: none;
+  }
+
+  .glow-effect {
+    box-shadow: 0 0 10px var(--primary-glow-30) !important;
+  }
+
+  .shimmer-effect::before {
+    animation-duration: 2s !important;
+  }
+}
+
+/* 尊重用户的动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .particle-background {
+    display: none !important;
+  }
+
+  .shimmer-effect::before {
+    display: none !important;
+  }
+}
+
+/* 低性能设备降级 */
+@media (prefers-reduced-motion: reduce), (max-width: 768px) {
+  .complex-animation {
+    animation: none !important;
+  }
+}
+
+/* ==================== Ant Design 全局样式覆盖 ==================== */
+
+/* 主按钮 */
+.ant-btn-primary {
+  background: linear-gradient(135deg, var(--neon-orange), var(--neon-pink)) !important;
+  border: 2px solid var(--neon-orange) !important;
+  box-shadow: 0 0 20px var(--neon-orange-50), 0 0 40px var(--neon-pink-30) !important;
+}
+
+.ant-btn-primary:hover {
+  background: linear-gradient(135deg, var(--neon-pink), var(--neon-orange)) !important;
+  box-shadow: 0 0 30px var(--neon-orange), 0 0 60px var(--neon-pink-50) !important;
+}
+
+/* 链接按钮 */
+.ant-btn-link {
+  color: var(--neon-orange) !important;
+}
+
+.ant-btn-link:hover {
+  color: var(--neon-pink) !important;
+}
+
+/* 标签 */
+.ant-tag-blue {
+  background: var(--neon-orange-10) !important;
+  border-color: var(--neon-orange-30) !important;
+  color: var(--neon-orange) !important;
+}
+
+/* 输入框焦点 */
+.ant-input:focus,
+.ant-input-focused {
+  border-color: var(--neon-orange) !important;
+  box-shadow: 0 0 0 2px var(--neon-orange-20) !important;
+}
+
+/* 选择框 */
+.ant-select-focused .ant-select-selector {
+  border-color: var(--neon-orange) !important;
+  box-shadow: 0 0 0 2px var(--neon-orange-20) !important;
+}
+
+/* 复选框 */
+.ant-checkbox-checked .ant-checkbox-inner {
+  background-color: var(--neon-orange) !important;
+  border-color: var(--neon-orange) !important;
+}
+
+/* 单选框 */
+.ant-radio-checked .ant-radio-inner {
+  border-color: var(--neon-orange) !important;
+}
+
+.ant-radio-checked .ant-radio-inner::after {
+  background-color: var(--neon-orange) !important;
+}
+
+/* 开关 */
+.ant-switch-checked {
+  background-color: var(--neon-orange) !important;
+}
+
+/* 滑块 */
+.ant-slider-track {
+  background-color: var(--neon-orange) !important;
+}
+
+.ant-slider-handle {
+  border-color: var(--neon-orange) !important;
+}
+
+/* 进度条 */
+.ant-progress-bg {
+  background-color: var(--neon-orange) !important;
+}
+
+/* 标签页 */
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--neon-orange) !important;
+}
+
+.ant-tabs-ink-bar {
+  background: var(--neon-orange) !important;
+}
+
+/* 消息提示 */
+.ant-message-info .anticon {
+  color: var(--neon-orange) !important;
+}
+
+/* 通知 */
+.ant-notification-notice-info {
+  border-left: 4px solid var(--neon-orange) !important;
+}
+
+/* ==================== 深色背景上的 Ant Design 组件 ==================== */
+
+/* 头部导航栏中的文本按钮 */
+.home-header .ant-btn-text,
+.home-header .ant-btn-link {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.home-header .ant-btn-text:hover,
+.home-header .ant-btn-link:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ghost 按钮在浅色背景上 */
+.ant-btn-primary.ant-btn-background-ghost {
+  border-color: var(--neon-orange) !important;
+  color: var(--neon-orange) !important;
+}
+
+.ant-btn-primary.ant-btn-background-ghost:hover {
+  border-color: var(--neon-pink) !important;
+  color: var(--neon-pink) !important;
+  background: var(--neon-orange-10) !important;
 }

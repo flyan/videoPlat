@@ -18,6 +18,7 @@ import {
 } from '@ant-design/icons'
 import { useAuthStore } from '../store/authStore'
 import { createRoom, joinRoom } from '../services/room'
+import ParticleExplosion from '../components/ParticleExplosion'
 import './Home.css'
 
 const Home = () => {
@@ -27,6 +28,7 @@ const Home = () => {
   const [joinModalVisible, setJoinModalVisible] = useState(false)
   const [loading, setLoading] = useState(false)
   const [quickJoinId, setQuickJoinId] = useState('')
+  const [explosion, setExplosion] = useState(null)
 
   /**
    * 创建会议室并自动加入
@@ -84,6 +86,18 @@ const Home = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  /**
+   * 触发粒子爆炸效果
+   */
+  const triggerExplosion = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setExplosion({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    })
+    setTimeout(() => setExplosion(null), 1000)
   }
 
   /**
@@ -152,6 +166,16 @@ const Home = () => {
 
   return (
     <div className="home-container">
+      {/* 粒子爆炸效果 */}
+      {explosion && (
+        <ParticleExplosion
+          x={explosion.x}
+          y={explosion.y}
+          color="#6366f1"
+          onComplete={() => setExplosion(null)}
+        />
+      )}
+
       {/* 顶部导航栏 */}
       <header className="home-header">
         <div className="header-content">
@@ -188,9 +212,8 @@ const Home = () => {
               <Button
                 icon={<SettingOutlined />}
                 type="text"
-                className="header-button"
+                className="header-button admin-button"
                 onClick={() => navigate('/admin/rooms')}
-                style={{ color: '#1890ff' }}
               >
                 管理台
               </Button>
@@ -244,7 +267,10 @@ const Home = () => {
                 type="primary"
                 size="large"
                 className="quick-join-button"
-                onClick={handleQuickJoin}
+                onClick={(e) => {
+                  triggerExplosion(e)
+                  handleQuickJoin()
+                }}
                 loading={loading}
               >
                 加入
@@ -257,7 +283,10 @@ const Home = () => {
             <div className="action-cards-grid">
               <div
                 className="action-card card-create"
-                onClick={() => setCreateModalVisible(true)}
+                onClick={(e) => {
+                  triggerExplosion(e)
+                  setCreateModalVisible(true)
+                }}
               >
                 <div className="card-icon-wrapper">
                   <div className="card-icon">
@@ -272,7 +301,10 @@ const Home = () => {
 
               <div
                 className="action-card card-join"
-                onClick={() => setJoinModalVisible(true)}
+                onClick={(e) => {
+                  triggerExplosion(e)
+                  setJoinModalVisible(true)
+                }}
               >
                 <div className="card-icon-wrapper">
                   <div className="card-icon">

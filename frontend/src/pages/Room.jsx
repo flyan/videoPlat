@@ -26,11 +26,11 @@ import {
   getParticipants,
   getAgoraToken,
 } from '../services/room'
-// 录制功能已禁用
-// import { startRecording, stopRecording } from '../services/recording'
+import { startRecording, stopRecording } from '../services/recording'
 import { sendChatMessage, getChatHistory } from '../services/chat'
 import websocketService from '../services/websocket'
 import VideoGrid from '../components/VideoGrid'
+import RecordingParticles from '../components/RecordingParticles'
 import './Room.css'
 
 /**
@@ -226,31 +226,27 @@ const Room = () => {
   }
 
   /**
-   * 切换录制（已禁用）
+   * 切换录制
    */
   const handleToggleRecording = async () => {
-    message.warning('录制功能已禁用')
-    return
+    if (!isHost) {
+      message.warning('只有主持人可以控制录制')
+      return
+    }
 
-    // 以下代码已禁用
-    // if (!isHost) {
-    //   message.warning('只有主持人可以控制录制')
-    //   return
-    // }
-
-    // try {
-    //   if (isRecording) {
-    //     await stopRecording(roomId)
-    //     setRecording(false)
-    //     message.success('录制已停止')
-    //   } else {
-    //     const data = await startRecording(roomId)
-    //     setRecording(true, data.recordingId)
-    //     message.success('开始录制')
-    //   }
-    // } catch (error) {
-    //   message.error(error.message || '录制操作失败')
-    // }
+    try {
+      if (isRecording) {
+        await stopRecording(roomId)
+        setRecording(false)
+        message.success('录制已停止')
+      } else {
+        const data = await startRecording(roomId)
+        setRecording(true, data.recordingId)
+        message.success('开始录制')
+      }
+    } catch (error) {
+      message.error(error.message || '录制操作失败')
+    }
   }
 
   /**
@@ -357,6 +353,9 @@ const Room = () => {
 
   return (
     <div className="room-container">
+      {/* 录制粒子效果 */}
+      <RecordingParticles isRecording={isRecording} />
+
       {/* 顶部信息栏 */}
       <header className="room-header">
         <div className="header-left">

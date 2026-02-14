@@ -4,6 +4,7 @@ import { Form, Input, Button, message } from 'antd'
 import { UserOutlined, LockOutlined, SmileOutlined, VideoCameraOutlined, TeamOutlined, SafetyOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import { useAuthStore } from '../store/authStore'
 import { login, guestLogin } from '../services/auth'
+import ParticleBackground from '../components/ParticleBackground'
 import './Login.css'
 
 /**
@@ -58,6 +59,7 @@ const Login = () => {
       {/* 动态背景 */}
       <div className="login-background">
         <div className="bg-gradient"></div>
+        <ParticleBackground />
         <div className="bg-shapes">
           <div className="shape shape-1"></div>
           <div className="shape shape-2"></div>
